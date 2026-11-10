@@ -1,0 +1,115 @@
+@model Suttipong_9922_L004.Models.SupportTicket
+@{
+    ViewData["Title"] = $"รายละเอียดคำร้อง #{Model.Id}";
+    Layout = "_AdminLayout";
+    string customerEmail = Model.Customer?.Email ?? "customer@tanglat.com";
+    string customerName = Model.Customer?.UserName ?? "customer01";
+}
+
+@if (TempData["SupportMsg"] != null)
+{
+    <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["SupportMsg"]
+    </div>
+}
+
+<div class="mb-3">
+    <a asp-controller="Support" asp-action="Index" class="btn btn-sm btn-light border rounded-3 px-3">
+        <i class="bi bi-arrow-left me-1"></i>ย้อนกลับ
+    </a>
+</div>
+
+<div class="row g-4">
+
+    <div class="col-12 col-lg-6">
+        <div class="admin-panel h-100">
+            <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold" style="width:44px;height:44px;">
+                        @(customerName.Substring(0, 1).ToUpper())
+                    </div>
+                    <div>
+                        <div class="fw-bold">@customerName</div>
+                        <div class="small text-secondary"><i class="bi bi-envelope me-1"></i>@customerEmail</div>
+                    </div>
+                </div>
+                <span class="badge @(Model.Priority == "urgent" ? "bg-danger" : "bg-warning text-dark")">
+                    @(Model.Priority ?? "medium")
+                </span>
+            </div>
+
+            <h6 class="fw-bold mb-2">@Model.Subject</h6>
+            <div class="p-3 rounded-3 bg-light border-0 mb-3 small" style="white-space: pre-line; min-height: 120px;">@Model.Description</div>
+
+            <div class="border rounded-4 p-4 bg-light text-center">
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <img src="@Model.ImageUrl" alt="Attachment" class="img-fluid rounded-3" style="max-height:220px;" />
+                }
+                else
+                {
+                    <i class="bi bi-image text-secondary fs-2"></i>
+                    <div class="small text-secondary mt-1">ไม่มีไฟล์ภาพแนบ</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="admin-panel mb-4">
+            <h6 class="fw-bold mb-3"><i class="bi bi-send text-primary me-2"></i>ส่งต่อแผนกที่เกี่ยวข้อง</h6>
+
+            <form asp-controller="Support" asp-action="ForwardTicket" method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">แผนกปลายทาง</label>
+                    <select name="targetDepartment" class="form-select bg-light border-0 py-2">
+                        <option value="Dev">ฝ่ายพัฒนาระบบ (Dev)</option>
+                        <option value="Accounting">ฝ่ายบัญชีและการเงิน (Accounting)</option>
+                        <option value="Marketing">ฝ่ายการตลาด (Marketing)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">บันทึกเพิ่มเติม</label>
+                    <textarea name="internalNote" rows="2" class="form-control bg-light border-0" placeholder="ระบุรายละเอียดการส่งต่อ"></textarea>
+                </div>
+                <button type="submit" class="btn btn-tanglat w-100 py-2 rounded-3">
+                    <i class="bi bi-arrow-right-circle me-1"></i>ส่งต่อคำร้อง
+                </button>
+            </form>
+        </div>
+
+        <div class="admin-panel mb-0">
+            <h6 class="fw-bold mb-3"><i class="bi bi-envelope-at text-success me-2"></i>ตอบกลับลูกค้าทางอีเมล</h6>
+            <form asp-controller="Support" asp-action="ReplyEmail" method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="row g-2 mb-2">
+                    <div class="col-md-7">
+                        <label class="form-label small fw-semibold">อีเมลผู้รับ</label>
+                        <input type="email" name="customerEmail" value="@customerEmail" class="form-control form-control-sm bg-light border-0 py-2" readonly />
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small fw-semibold">สถานะคำร้อง</label>
+                        <select name="newStatus" class="form-select form-select-sm bg-light border-0 py-2">
+                            <option value="resolved" selected>เสร็จสิ้น</option>
+                            <option value="in_progress">กำลังดำเนินการ</option>
+                            <option value="closed">ปิดงาน</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">หัวข้ออีเมล</label>
+                    <input type="text" name="emailSubject" value="RE: @Model.Subject" class="form-control form-control-sm bg-light border-0 py-2" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">ข้อความตอบกลับ</label>
+                    <textarea name="emailBody" rows="3" class="form-control bg-light border-0" placeholder="ระบุข้อความตอบกลับลูกค้า" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-outline-success w-100 py-2 rounded-3 fw-semibold">
+                    <i class="bi bi-send me-1"></i>ส่งอีเมลและบันทึกสถานะ
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>

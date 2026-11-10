@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
@@ -116,6 +116,10 @@ public partial class Csi402dbContext : DbContext
             entity.Property(e => e.Position)
                 .HasMaxLength(100)
                 .HasColumnName("position");
+            entity.Property(e => e.Salary)
+                .HasPrecision(10, 2)
+                .HasDefaultValueSql("'25000.00'")
+                .HasColumnName("salary");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.User).WithOne(p => p.Employee)
@@ -231,8 +235,8 @@ public partial class Csi402dbContext : DbContext
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("updated_at");
+                .HasColumnName("updated_at")
+                .HasColumnType("datetime");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Advertisement).WithMany(p => p.Payments)

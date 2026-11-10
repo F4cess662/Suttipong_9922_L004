@@ -1,0 +1,71 @@
+@model IEnumerable<Suttipong_9922_L004.Models.Employee>
+@{
+    ViewData["Title"] = "เงินเดือนพนักงาน";
+    Layout = "_AdminLayout";
+    string deptFilter = ViewBag.DepartmentFilter as string ?? "all";
+}
+
+@if (TempData["PayrollMsg"] != null)
+{
+    <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["PayrollMsg"]
+    </div>
+}
+
+<div class="admin-panel">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <form asp-controller="Accounting" asp-action="Payroll" method="get" class="d-flex gap-2 flex-grow-1" style="max-width: 520px;">
+            <input type="text" name="search" value="@ViewBag.Search" class="form-control bg-light border-0" placeholder="ค้นหาชื่อ หรือตำแหน่ง" />
+            <select name="department" class="form-select bg-light border-0" style="max-width: 170px;">
+                <option value="all" selected="@(deptFilter == "all")">ทุกแผนก</option>
+                <option value="Support" selected="@(deptFilter == "Support")">Support</option>
+                <option value="Dev" selected="@(deptFilter == "Dev")">Dev</option>
+                <option value="Marketing" selected="@(deptFilter == "Marketing")">Marketing</option>
+                <option value="Accounting" selected="@(deptFilter == "Accounting")">Accounting</option>
+            </select>
+            <button type="submit" class="btn btn-tanglat px-4">กรอง</button>
+        </form>
+
+        <div class="fw-semibold text-secondary small">
+            รวมทั้งหมด: <span class="text-dark fs-6 fw-bold">@Model.Sum(e => e.Salary ?? 25000m).ToString("N2") ฿</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-secondary">
+                <tr>
+                    <th>รหัส</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>ตำแหน่ง</th>
+                    <th>แผนก</th>
+                    <th>วันที่เริ่มงาน</th>
+                    <th>เงินเดือน (บาท)</th>
+                    <th class="text-end">สถานะ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var emp in Model)
+                {
+                    <tr>
+                        <td><span class="badge bg-light text-dark border">EMP-@emp.Id.ToString("D3")</span></td>
+                        <td class="fw-bold">@emp.FirstName @emp.LastName</td>
+                        <td>@emp.Position</td>
+                        <td><span class="badge bg-light text-dark border">@emp.Department</span></td>
+                        <td>@(emp.HireDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                        <td style="max-width: 190px;">
+                            <form asp-controller="Accounting" asp-action="UpdateSalary" method="post" class="d-flex gap-1">
+                                <input type="hidden" name="id" value="@emp.Id" />
+                                <input type="number" step="500" name="salary" value="@(emp.Salary ?? 25000m)" class="form-control form-control-sm fw-bold bg-light border-0" />
+                                <button type="submit" class="btn btn-sm btn-tanglat text-nowrap px-3">บันทึก</button>
+                            </form>
+                        </td>
+                        <td class="text-end">
+                            <span class="badge bg-success-subtle text-success"><i class="bi bi-check2 me-1"></i>ปกติ</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

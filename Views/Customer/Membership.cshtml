@@ -1,0 +1,89 @@
+@model IEnumerable<Suttipong_9922_L004.Models.SubscriptionPlan>
+@{
+    ViewData["Title"] = "แพ็กเกจสมาชิก";
+    Layout = "CustomerLayout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+
+        @if (TempData["PaymentSuccess"] != null)
+        {
+            <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4">
+                <i class="bi bi-check-circle-fill me-2"></i>@TempData["PaymentSuccess"]
+            </div>
+        }
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+            <div class="p-4 text-white text-center" style="background: linear-gradient(135deg, #0b3d2e 0%, #145e46 100%);">
+                <span class="badge bg-white text-dark rounded-pill px-3 py-1 mb-2 fw-semibold">
+                    <i class="bi bi-gem me-1 text-success"></i>TANG-LAT VIP
+                </span>
+                <h4 class="fw-bold mb-1">สิทธิพิเศษสำหรับสมาชิก</h4>
+                <p class="text-white-50 small mb-0">ใช้งานเต็มประสิทธิภาพและไร้โฆษณาคั่น</p>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="d-flex flex-column gap-3 mb-4">
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-3 bg-light">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:42px;height:42px;">
+                            <i class="bi bi-slash-circle"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold small">ปิดการแสดงผลโฆษณาทั้งหมด</div>
+                            <div class="small text-secondary">ใช้งานแผนที่และเปรียบเทียบเส้นทางได้เต็มหน้าจอ</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-3 bg-light">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:42px;height:42px;">
+                            <i class="bi bi-pin-map"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold small">เพิ่มจุดแวะพักในทริปได้ไม่จำกัด</div>
+                            <div class="small text-secondary">ปลดล็อกขีดจำกัดการเลือกสถานที่ท่องเที่ยวต่อทริป</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-3 bg-light">
+                        <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:42px;height:42px;">
+                            <i class="bi bi-bookmark-star"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold small">บันทึกทริปโปรดไม่จำกัด</div>
+                            <div class="small text-secondary">จัดเก็บเส้นทางประจำไว้เรียกดูได้ตลอดเวลา</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    @foreach (var plan in Model.Where(p => p.Id != 3))
+                    {
+                        <div class="col-md-6">
+                            <div class="border rounded-4 p-4 h-100 d-flex flex-column justify-content-between @(plan.Id == 1 ? "border-success border-2" : "")">
+                                <div>
+                                    <h6 class="fw-bold mb-2">@plan.Name</h6>
+                                    <div class="fs-3 fw-bold text-success mb-2">@plan.Price.ToString("N0") ฿ <small class="fs-6 text-secondary fw-normal">/ @plan.DurationDays วัน</small></div>
+                                    <p class="small text-secondary mb-3">@plan.Description</p>
+                                </div>
+                                <a asp-controller="Customer" asp-action="Payment"
+                                   asp-route-planId="@plan.Id" asp-route-amount="@plan.Price" asp-route-title="@plan.Name"
+                                   class="btn btn-brand rounded-3 w-100 py-2">
+                                    สมัครแพ็กเกจ
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="border-top pt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="small text-secondary">ต้องการโปรโมทร้านค้าหรือธุรกิจของคุณบนแอปพลิเคชัน?</span>
+                    <a asp-controller="Customer" asp-action="Ads" class="btn btn-outline-dark rounded-3 btn-sm px-3">
+                        <i class="bi bi-megaphone me-1"></i>ลงโฆษณา
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

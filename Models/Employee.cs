@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Suttipong_9922_L004.Models;
@@ -16,6 +16,8 @@ public partial class Employee
     public string? Position { get; set; }
 
     public string? Department { get; set; }
+
+    public decimal? Salary { get; set; }
 
     public DateOnly? HireDate { get; set; }
 

@@ -1,0 +1,110 @@
+@model IEnumerable<Suttipong_9922_L004.Models.Payment>
+@{
+    ViewData["Title"] = "ตรวจสอบการชำระเงิน";
+    Layout = "_AdminLayout";
+    string statusFilter = ViewBag.StatusFilter as string ?? "all";
+}
+
+@if (TempData["PaymentVerifyMsg"] != null)
+{
+    <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["PaymentVerifyMsg"]
+    </div>
+}
+
+<div class="admin-panel">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <form asp-controller="Accounting" asp-action="Payments" method="get" class="d-flex gap-2 flex-grow-1" style="max-width: 440px;">
+            <input type="text" name="search" value="@ViewBag.Search" class="form-control bg-light border-0" placeholder="ค้นหารหัสอ้างอิง หรือชื่อผู้ใช้" />
+            <button type="submit" class="btn btn-tanglat px-4">ค้นหา</button>
+        </form>
+
+        <div class="d-flex gap-2">
+            <a asp-action="Payments" asp-route-status="all" class="btn btn-sm rounded-pill px-3 @(statusFilter == "all" ? "btn-tanglat" : "btn-outline-secondary")">ทั้งหมด</a>
+            <a asp-action="Payments" asp-route-status="pending" class="btn btn-sm rounded-pill px-3 @(statusFilter == "pending" ? "btn-warning" : "btn-outline-warning")">รอตรวจสอบ</a>
+            <a asp-action="Payments" asp-route-status="completed" class="btn btn-sm rounded-pill px-3 @(statusFilter == "completed" ? "btn-success" : "btn-outline-success")">ยืนยันแล้ว</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-secondary">
+                <tr>
+                    <th>ผู้ชำระเงิน</th>
+                    <th>รายการ</th>
+                    <th>รหัสอ้างอิง</th>
+                    <th>ช่องทาง</th>
+                    <th>จำนวนเงิน</th>
+                    <th>สถานะ</th>
+                    <th class="text-end">การจัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    string userInitial = p.User?.UserName?.Substring(0, 1).ToUpper() ?? "U";
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold" style="width:36px;height:36px;font-size:13px;">
+                                    @userInitial
+                                </div>
+                                <div>
+                                    <div class="fw-bold small">@(p.User?.UserName ?? "customer01")</div>
+                                    <div class="small text-secondary">@(p.User?.Email ?? "customer@tanglat.com")</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="small">
+                            @if (p.SubscriptionPlan != null)
+                            {
+                                <span class="badge bg-light text-dark border me-1"><i class="bi bi-gem text-success me-1"></i>VIP</span>@p.SubscriptionPlan.Name
+                            }
+                            else if (p.Advertisement != null)
+                            {
+                                <span class="badge bg-light text-dark border me-1"><i class="bi bi-megaphone text-primary me-1"></i>Ads</span>@p.Advertisement.Title
+                            }
+                            else
+                            {
+                                <span>ชำระค่าบริการ</span>
+                            }
+                        </td>
+                        <td class="small text-secondary">@(p.TransactionRef ?? "-")</td>
+                        <td class="small">@p.PaymentMethod</td>
+                        <td class="fw-bold text-success">@p.Amount.ToString("N2") ฿</td>
+                        <td>
+                            <span class="badge rounded-pill @(p.PaymentStatus == "completed" ? "bg-success" : p.PaymentStatus == "pending" ? "bg-warning text-dark" : "bg-danger")">
+                                @(p.PaymentStatus == "completed" ? "ยืนยันแล้ว" : p.PaymentStatus == "pending" ? "รอตรวจสอบ" : "ปฏิเสธ")
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            @if (p.PaymentStatus == "pending")
+                            {
+                                <div class="d-inline-flex gap-1">
+                                    <form asp-controller="Accounting" asp-action="VerifyPayment" method="post">
+                                        <input type="hidden" name="id" value="@p.Id" />
+                                        <input type="hidden" name="newStatus" value="completed" />
+                                        <button type="submit" class="btn btn-sm btn-tanglat rounded-3 px-2" title="อนุมัติ">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+                                    <form asp-controller="Accounting" asp-action="VerifyPayment" method="post">
+                                        <input type="hidden" name="id" value="@p.Id" />
+                                        <input type="hidden" name="newStatus" value="failed" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-3 px-2" title="ปฏิเสธ">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="small text-secondary"><i class="bi bi-check2-all text-success"></i></span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

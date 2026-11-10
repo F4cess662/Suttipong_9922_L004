@@ -1,16 +1,18 @@
 :root {
-    --admin-bg: #F4F3EF;
+    --admin-bg: #F6F8F7;
     --admin-surface: #FFFFFF;
-    --admin-surface-1: #EFEEE8;
-    --admin-border: #E1DFD6;
-    --admin-text-primary: #201F1C;
-    --admin-text-secondary: #6B6A64;
-    --admin-accent-bg: #E6F1FB;
-    --admin-accent-text: #0C447C;
-    --admin-danger-text: #A32D2D;
-    --admin-warning-text: #854F0B;
-    --admin-success-text: #3B6D11;
-    --admin-radius: 8px;
+    --admin-surface-1: #EFF4F1;
+    --admin-border: #E2E8E5;
+    --admin-text-primary: #111827;
+    --admin-text-secondary: #64748B;
+    --admin-accent: #0B3D2E;
+    --admin-accent-hover: #135742;
+    --admin-accent-bg: #E6F4EA;
+    --admin-accent-text: #0B3D2E;
+    --admin-danger-text: #DC2626;
+    --admin-warning-text: #D97706;
+    --admin-success-text: #16A34A;
+    --admin-radius: 12px;
 }
 
 * {
@@ -19,9 +21,10 @@
 
 body {
     margin: 0;
-    font-family: "Noto Sans Thai", "Segoe UI", sans-serif;
+    font-family: "Noto Sans Thai", "Inter", "Segoe UI", sans-serif;
     background: var(--admin-bg);
     color: var(--admin-text-primary);
+    -webkit-font-smoothing: antialiased;
 }
 
 .admin-shell {
@@ -31,54 +34,60 @@ body {
 
 /* ---------- Sidebar ---------- */
 .admin-sidebar {
-    width: 220px;
+    width: 248px;
     flex-shrink: 0;
     background: var(--admin-surface);
     border-right: 1px solid var(--admin-border);
     display: flex;
     flex-direction: column;
-    padding: 16px 12px;
+    padding: 20px 14px;
 }
 
 .admin-brand {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 8px 20px;
+    gap: 12px;
+    padding: 4px 10px 24px;
+    border-bottom: 1px solid var(--admin-border);
+    margin-bottom: 16px;
 }
 
 .admin-brand-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: var(--admin-accent-bg);
-    color: var(--admin-accent-text);
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--admin-accent);
+    color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 20px;
 }
 
 .admin-brand-text {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--admin-text-primary);
+    line-height: 1.2;
 }
 
 .admin-nav {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
 }
 
 .admin-nav-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: var(--admin-radius);
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
     color: var(--admin-text-secondary);
     text-decoration: none;
     font-size: 14px;
+    font-weight: 500;
+    transition: all 0.18s ease;
 }
 
 .admin-nav-item i {
@@ -87,16 +96,20 @@ body {
 
 .admin-nav-item:hover {
     background: var(--admin-surface-1);
+    color: var(--admin-text-primary);
 }
 
 .admin-nav-item.active {
-    background: var(--admin-surface-1);
-    color: var(--admin-text-primary);
+    background: var(--admin-accent);
+    color: #FFFFFF;
     font-weight: 600;
+    box-shadow: 0 4px 12px rgba(11, 61, 46, 0.18);
 }
 
 .admin-nav-bottom {
     margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--admin-border);
 }
 
 /* ---------- Main area ---------- */
@@ -111,94 +124,63 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 24px;
+    padding: 16px 28px;
     background: var(--admin-surface);
     border-bottom: 1px solid var(--admin-border);
 }
 
 .admin-topbar-title {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     margin: 0;
+    color: var(--admin-text-primary);
 }
 
 .admin-avatar {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: var(--admin-accent-bg);
     color: var(--admin-accent-text);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
 }
 
 .admin-content {
-    padding: 24px;
+    padding: 28px;
     overflow: auto;
-}
-
-/* ---------- ส่วนประกอบที่หน้าลูกเรียกใช้ต่อจาก Layout นี้ ---------- */
-.admin-card-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.admin-metric-card {
-    background: var(--admin-surface-1);
-    border-radius: var(--admin-radius);
-    padding: 16px;
-}
-
-.admin-metric-label {
-    font-size: 13px;
-    color: var(--admin-text-secondary);
-    margin: 0 0 6px;
-}
-
-.admin-metric-value {
-    font-size: 24px;
-    font-weight: 600;
-    margin: 0;
 }
 
 .admin-panel {
     background: var(--admin-surface);
     border: 1px solid var(--admin-border);
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-bottom: 16px;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
 }
 
-.admin-panel-title {
-    font-size: 14px;
+.btn-tanglat {
+    background-color: var(--admin-accent);
+    border-color: var(--admin-accent);
+    color: #FFFFFF;
     font-weight: 600;
-    margin: 0 0 10px;
 }
 
-.admin-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--admin-border);
-    font-size: 13px;
+.btn-tanglat:hover {
+    background-color: var(--admin-accent-hover);
+    border-color: var(--admin-accent-hover);
+    color: #FFFFFF;
 }
-
-.admin-row:last-child {
-    border-bottom: none;
-}
-
-.text-danger { color: var(--admin-danger-text); }
-.text-warning { color: var(--admin-warning-text); }
-.text-success { color: var(--admin-success-text); }
 
 @media (max-width: 768px) {
     .admin-sidebar {
-        width: 64px;
+        width: 72px;
+        padding: 16px 8px;
     }
 
     .admin-brand-text,
@@ -206,7 +188,7 @@ body {
         display: none;
     }
 
-    .admin-card-grid {
-        grid-template-columns: 1fr;
+    .admin-content {
+        padding: 16px;
     }
 }

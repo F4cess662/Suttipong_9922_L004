@@ -1,0 +1,167 @@
+@model IEnumerable<Suttipong_9922_L004.Models.Location>
+@{
+    ViewData["Title"] = "สำรวจสถานที่ท่องเที่ยว";
+    Layout = "CustomerLayout";
+    var ads = ViewBag.Ads as List<Suttipong_9922_L004.Models.Advertisement> ?? new();
+    bool isVip = ViewBag.IsVip as bool? ?? false;
+    string currentCat = ViewBag.Category as string ?? "all";
+}
+
+<style>
+    .location-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #e2e8f0;
+    }
+    .location-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08) !important;
+    }
+    .location-card.selected-card {
+        border: 2px solid #0b3d2e;
+    }
+</style>
+
+@if (!isVip && ads.Any())
+{
+    var ad = ads.First();
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(90deg, #0b3d2e 0%, #1b4332 100%); color: #fff;">
+        <div class="row g-0 align-items-center">
+            <div class="col-md-8 p-3 px-4">
+                <span class="badge bg-white text-dark mb-2"><i class="bi bi-megaphone me-1"></i>ผู้สนับสนุน</span>
+                <h6 class="fw-bold mb-2">@ad.Title</h6>
+                <div class="d-flex gap-2">
+                    <a href="@ad.RedirectUrl" target="_blank" class="btn btn-sm btn-light fw-semibold px-3 rounded-3">ดูรายละเอียด</a>
+                    <a asp-controller="Customer" asp-action="Membership" class="btn btn-sm btn-outline-light px-3 rounded-3"><i class="bi bi-slash-circle me-1"></i>ปิดโฆษณา</a>
+                </div>
+            </div>
+            <div class="col-md-4 d-none d-md-block">
+                <img src="@ad.ImageUrl" alt="Sponsored" style="height: 112px; width: 100%; object-fit: cover;" />
+            </div>
+        </div>
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+    <form asp-controller="Customer" asp-action="Home" method="get" class="row g-2 align-items-center mb-3">
+        <div class="col-md-9">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-0"><i class="bi bi-search text-secondary"></i></span>
+                <input type="text" name="search" value="@ViewBag.Search" class="form-control bg-light border-0 py-2"
+                       placeholder="ค้นหาสถานที่ท่องเที่ยว ร้านอาหาร หรือย่านในกรุงเทพฯ" />
+            </div>
+        </div>
+        <div class="col-md-3 d-grid">
+            <button type="submit" class="btn btn-brand py-2 rounded-3">
+                <i class="bi bi-search me-1"></i>ค้นหา
+            </button>
+        </div>
+    </form>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Home" asp-route-category="all" class="btn btn-sm rounded-pill px-3 @(currentCat == "all" ? "btn-brand" : "btn-outline-secondary")">
+            <i class="bi bi-grid me-1"></i>ทั้งหมด
+        </a>
+        <a asp-action="Home" asp-route-category="attraction" class="btn btn-sm rounded-pill px-3 @(currentCat == "attraction" ? "btn-brand" : "btn-outline-secondary")">
+            <i class="bi bi-bank me-1"></i>สถานที่ท่องเที่ยว
+        </a>
+        <a asp-action="Home" asp-route-category="restaurant" class="btn btn-sm rounded-pill px-3 @(currentCat == "restaurant" ? "btn-brand" : "btn-outline-secondary")">
+            <i class="bi bi-cup-hot me-1"></i>ร้านอาหาร
+        </a>
+        <a asp-action="Home" asp-route-category="shopping" class="btn btn-sm rounded-pill px-3 @(currentCat == "shopping" ? "btn-brand" : "btn-outline-secondary")">
+            <i class="bi bi-bag me-1"></i>ช้อปปิ้ง
+        </a>
+    </div>
+</div>
+
+<form id="tripSelectForm" asp-controller="Customer" asp-action="Trip" method="get">
+    <input type="hidden" name="selectedIds" id="selectedIdsInput" />
+
+    <div class="row g-4 mb-5">
+        @foreach (var loc in Model)
+        {
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card h-100 shadow-sm rounded-4 overflow-hidden position-relative location-card bg-white"
+                     id="card_@loc.Id"
+                     style="cursor:pointer;"
+                     onclick="toggleCardSelection(@loc.Id)">
+
+                    <div class="position-absolute top-0 end-0 m-3 z-2">
+                        <input type="checkbox" class="form-check-input place-checkbox border-2 shadow-sm"
+                               value="@loc.Id" id="chk_@loc.Id"
+                               style="width: 24px; height: 24px; cursor: pointer;"
+                               onclick="event.stopPropagation(); updateSelectedPlaces();" />
+                    </div>
+
+                    <div class="position-absolute top-0 start-0 m-3 z-2">
+                        <span class="badge bg-dark bg-opacity-75 rounded-pill px-3 py-1 fw-normal">
+                            <i class="bi @(loc.Category == "attraction" ? "bi-bank" : loc.Category == "restaurant" ? "bi-cup-hot" : "bi-bag") me-1"></i>
+                            @(loc.Category == "attraction" ? "ท่องเที่ยว" : loc.Category == "restaurant" ? "ร้านอาหาร" : "ช้อปปิ้ง")
+                        </span>
+                    </div>
+
+                    <img src="@(string.IsNullOrEmpty(loc.ImageUrl) ? "https://images.unsplash.com/photo-1563492065599-3520f775eeed?auto=format&fit=crop&w=600&q=80" : loc.ImageUrl)"
+                         class="card-img-top" alt="@loc.Name" style="height: 180px; object-fit: cover;" />
+
+                    <div class="card-body d-flex flex-column p-3">
+                        <h6 class="fw-bold mb-1 text-dark">@loc.Name</h6>
+                        <p class="text-secondary small mb-3 flex-grow-1">@loc.Description</p>
+                        <div class="small text-secondary border-top pt-2 d-flex align-items-center gap-1">
+                            <i class="bi bi-geo-alt text-success"></i>
+                            <span class="text-truncate">@(loc.Address ?? "กรุงเทพมหานคร")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="position-fixed bottom-0 start-50 translate-middle-x mb-5 pb-4 z-3" style="width: 90%; max-width: 380px;">
+        <button type="submit" class="btn btn-brand btn-lg w-100 rounded-pill shadow py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-route"></i>
+            <span>คำนวณเส้นทาง (<span id="selectedCountText">0</span>)</span>
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        const isVipUser = @(isVip ? "true" : "false");
+
+        function toggleCardSelection(id) {
+            const chk = document.getElementById('chk_' + id);
+            if (chk) {
+                chk.checked = !chk.checked;
+                updateSelectedPlaces();
+            }
+        }
+
+        function updateSelectedPlaces() {
+            const checked = Array.from(document.querySelectorAll('.place-checkbox:checked'));
+            if (!isVipUser && checked.length > 3) {
+                alert('บัญชีทั่วไปสามารถเลือกได้สูงสุด 3 สถานที่ต่อทริป');
+                checked[checked.length - 1].checked = false;
+                return updateSelectedPlaces();
+            }
+
+            document.querySelectorAll('.location-card').forEach(c => c.classList.remove('selected-card'));
+            checked.forEach(c => {
+                const card = document.getElementById('card_' + c.value);
+                if (card) card.classList.add('selected-card');
+            });
+
+            const ids = checked.map(c => c.value);
+            document.getElementById('selectedIdsInput').value = ids.join(',');
+            document.getElementById('selectedCountText').innerText = ids.length;
+            const badge = document.getElementById('navTripBadge');
+            if (badge) badge.innerText = ids.length;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const boxes = document.querySelectorAll('.place-checkbox');
+            for (let i = 0; i < Math.min(3, boxes.length); i++) {
+                boxes[i].checked = true;
+            }
+            updateSelectedPlaces();
+        });
+    </script>
+}

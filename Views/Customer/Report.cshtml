@@ -1,0 +1,84 @@
+@{
+    ViewData["Title"] = "แจ้งปัญหาการใช้งาน";
+    Layout = "CustomerLayout";
+    var myTickets = ViewBag.MyTickets as List<Suttipong_9922_L004.Models.SupportTicket> ?? new();
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-7">
+
+        @if (TempData["ReportSuccess"] != null)
+        {
+            <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4">
+                <i class="bi bi-check-circle-fill me-2"></i>@TempData["ReportSuccess"]
+            </div>
+        }
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+            <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-success-subtle text-success" style="width:48px;height:48px;">
+                    <i class="bi bi-headset fs-4"></i>
+                </span>
+                <div>
+                    <h5 class="fw-bold mb-0">แจ้งปัญหาการใช้งาน</h5>
+                    <span class="text-secondary small">ส่งข้อมูลปัญหาเพื่อให้เจ้าหน้าที่ตรวจสอบและติดต่อกลับ</span>
+                </div>
+            </div>
+
+            <form asp-controller="Customer" asp-action="Report" method="post">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">หัวข้อเรื่อง</label>
+                    <input type="text" name="subject" class="form-control bg-light border-0 py-2"
+                           placeholder="ระบุหัวข้อปัญหา" required />
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">ระดับความสำคัญ</label>
+                        <select name="priority" class="form-select bg-light border-0 py-2">
+                            <option value="low">ทั่วไป</option>
+                            <option value="medium" selected>ปานกลาง</option>
+                            <option value="high">สำคัญ</option>
+                            <option value="urgent">เร่งด่วน</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">ลิงก์รูปภาพประกอบ (ถ้ามี)</label>
+                        <input type="url" name="imageUrl" class="form-control bg-light border-0 py-2" placeholder="https://..." />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold">รายละเอียด</label>
+                    <textarea name="description" rows="4" class="form-control bg-light border-0"
+                              placeholder="ระบุรายละเอียดปัญหาที่พบ" required></textarea>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-brand py-2 rounded-3">
+                        <i class="bi bi-send me-1"></i>ส่งข้อมูล
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        @if (myTickets.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-secondary"></i>ประวัติการแจ้งปัญหา</h6>
+                @foreach (var t in myTickets)
+                {
+                    <div class="border-bottom py-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-semibold small">@t.Subject</div>
+                            <div class="small text-secondary">@t.Description</div>
+                        </div>
+                        <span class="badge rounded-pill @(t.Status == "resolved" ? "bg-success" : t.Status == "in_progress" ? "bg-warning text-dark" : "bg-secondary")">
+                            @(t.Status == "resolved" ? "เสร็จสิ้น" : t.Status == "in_progress" ? "กำลังดำเนินการ" : "รอดำเนินการ")
+                        </span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

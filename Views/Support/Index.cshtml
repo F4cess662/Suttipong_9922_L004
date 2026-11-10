@@ -1,0 +1,62 @@
+@model IEnumerable<Suttipong_9922_L004.Models.SupportTicket>
+@{
+    ViewData["Title"] = "รายการแจ้งปัญหา";
+    Layout = "_AdminLayout";
+    string statusFilter = ViewBag.StatusFilter as string ?? "all";
+}
+
+<div class="admin-panel">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <form asp-controller="Support" asp-action="Index" method="get" class="d-flex gap-2 flex-grow-1" style="max-width: 440px;">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-0"><i class="bi bi-search text-secondary"></i></span>
+                <input type="text" name="search" value="@ViewBag.Search" class="form-control bg-light border-0" placeholder="ค้นหาหัวข้อ หรืออีเมลผู้แจ้ง" />
+                <button type="submit" class="btn btn-tanglat px-3">ค้นหา</button>
+            </div>
+        </form>
+
+        <div class="d-flex gap-2">
+            <a asp-action="Index" asp-route-status="all" class="btn btn-sm rounded-pill px-3 @(statusFilter == "all" ? "btn-tanglat" : "btn-outline-secondary")">ทั้งหมด (@Model.Count())</a>
+            <a asp-action="Index" asp-route-status="open" class="btn btn-sm rounded-pill px-3 @(statusFilter == "open" ? "btn-danger" : "btn-outline-danger")">รอดำเนินการ</a>
+            <a asp-action="Index" asp-route-status="in_progress" class="btn btn-sm rounded-pill px-3 @(statusFilter == "in_progress" ? "btn-warning" : "btn-outline-warning")">กำลังดำเนินการ</a>
+            <a asp-action="Index" asp-route-status="resolved" class="btn btn-sm rounded-pill px-3 @(statusFilter == "resolved" ? "btn-success" : "btn-outline-success")">เสร็จสิ้น</a>
+        </div>
+    </div>
+
+    <div class="d-flex flex-column gap-3">
+        @foreach (var item in Model)
+        {
+            <div class="border rounded-4 p-3 bg-white d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-light border text-dark d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:46px;height:46px;">
+                        #@item.Id
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">
+                            @item.Subject
+                            @if (item.Priority == "urgent" || item.Priority == "high")
+                            {
+                                <span class="badge bg-danger-subtle text-danger ms-1 small"><i class="bi bi-exclamation-circle me-1"></i>@item.Priority</span>
+                            }
+                        </div>
+                        <div class="small text-secondary text-truncate" style="max-width: 560px;">@item.Description</div>
+                        <div class="small text-muted mt-1">
+                            <i class="bi bi-person me-1"></i>@(item.Customer?.UserName ?? "customer01") (@(item.Customer?.Email ?? "customer@tanglat.com"))
+                            <span class="mx-1">•</span>
+                            <i class="bi bi-clock me-1"></i>@(item.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge rounded-pill px-3 py-2 @(item.Status == "resolved" ? "bg-success" : item.Status == "in_progress" ? "bg-warning text-dark" : "bg-secondary")">
+                        @(item.Status == "resolved" ? "เสร็จสิ้น" : item.Status == "in_progress" ? "กำลังดำเนินการ" : "รอดำเนินการ")
+                    </span>
+                    <a asp-controller="Support" asp-action="Detail" asp-route-id="@item.Id" class="btn btn-tanglat btn-sm px-3 rounded-3">
+                        <i class="bi bi-arrow-right-circle me-1"></i>จัดการ
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>

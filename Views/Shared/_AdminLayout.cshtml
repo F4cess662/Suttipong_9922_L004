@@ -1,74 +1,146 @@
+@using Microsoft.AspNetCore.Http
 @{
-    // ตั้งค่าหัวข้อของแต่ละหน้าได้ที่ตัวหน้านั้นๆ ด้วย ViewData["Title"] = "ชื่อหน้า";
     var pageTitle = ViewData["Title"] as string ?? "แดชบอร์ด";
-
-    // ใช้บอกว่าเมนูไหนใน Sidebar ควรถูกไฮไลต์อยู่ ตั้งค่าที่ตัวหน้าด้วย ViewData["ActiveMenu"] = "dashboard";
-    // ค่าที่ใช้ได้: dashboard, pricing, places, issues, settings
     var activeMenu = ViewData["ActiveMenu"] as string ?? "dashboard";
-
-   
-    var adminInitials = ViewData["AdminInitials"] as string ?? "AD";
-    var adminName = ViewData["AdminName"] as string ?? "แอดมิน";
+    var roleDept = ViewData["Department"] as string ?? Context.Session.GetString("Department") ?? "Dev";
+    var username = Context.Session.GetString("Username") ?? roleDept;
+    var adminInitials = username.Length >= 2 ? username.Substring(0, 2).ToUpper() : "TL";
+    var settingsController = roleDept == "Marketing" ? "Marketing" : roleDept == "Accounting" ? "Accounting" : roleDept == "Support" ? "Support" : "Dev";
 }
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@pageTitle - ทางลัด แอดมิน</title>
+    <title>@pageTitle - ทางลัด</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/admin-layout.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
 </head>
 <body>
     <div class="admin-shell">
 
-        <!-- ===== Sidebar เมนูหลัก ===== -->
         <aside class="admin-sidebar">
             <div class="admin-brand">
                 <span class="admin-brand-icon"><i class="ti ti-route" aria-hidden="true"></i></span>
-                <span class="admin-brand-text">ทางลัด แอดมิน</span>
+                <div class="admin-brand-text">
+                    <div>ทางลัด</div>
+                    <small class="text-secondary fw-normal" style="font-size: 12px;">@roleDept Portal</small>
+                </div>
             </div>
 
             <nav class="admin-nav">
-                <a class="admin-nav-item @(activeMenu == "dashboard" ? "active" : "")" href="/Admin/Dashboard">
-                    <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
-                    <span>แดชบอร์ด</span>
-                </a>
-                <a class="admin-nav-item @(activeMenu == "pricing" ? "active" : "")" href="/Admin/Pricing">
-                    <i class="ti ti-currency-baht" aria-hidden="true"></i>
-                    <span>ราคาการเดินทาง</span>
-                </a>
-                <a class="admin-nav-item @(activeMenu == "places" ? "active" : "")" href="/Admin/Places">
-                    <i class="ti ti-map-pin-star" aria-hidden="true"></i>
-                    <span>สถานที่ยอดนิยม</span>
-                </a>
-                <a class="admin-nav-item @(activeMenu == "issues" ? "active" : "")" href="/Admin/Issues">
-                    <i class="ti ti-alert-triangle" aria-hidden="true"></i>
-                    <span>ปัญหาระบบ</span>
-                </a>
+                @if (roleDept.Equals("Marketing", StringComparison.OrdinalIgnoreCase))
+                {
+                    <a class="admin-nav-item @(activeMenu == "dashboard" ? "active" : "")" asp-controller="Marketing" asp-action="Dashboard">
+                        <i class="ti ti-chart-bar"></i>
+                        <span>ภาพรวมการตลาด</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "ads" ? "active" : "")" asp-controller="Marketing" asp-action="Ads">
+                        <i class="ti ti-ad-2"></i>
+                        <span>ป้ายโฆษณา</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "promotions" ? "active" : "")" asp-controller="Marketing" asp-action="Promotions">
+                        <i class="ti ti-discount-2"></i>
+                        <span>แพ็กเกจสมาชิก</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "issues" ? "active" : "")" asp-controller="Marketing" asp-action="Issues">
+                        <i class="ti ti-inbox"></i>
+                        <span>คำร้องการตลาด</span>
+                    </a>
+                }
+                else if (roleDept.Equals("Accounting", StringComparison.OrdinalIgnoreCase))
+                {
+                    <a class="admin-nav-item @(activeMenu == "dashboard" ? "active" : "")" asp-controller="Accounting" asp-action="Dashboard">
+                        <i class="ti ti-report-money"></i>
+                        <span>ภาพรวมการเงิน</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "payroll" ? "active" : "")" asp-controller="Accounting" asp-action="Payroll">
+                        <i class="ti ti-users"></i>
+                        <span>เงินเดือนพนักงาน</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "payments" ? "active" : "")" asp-controller="Accounting" asp-action="Payments">
+                        <i class="ti ti-receipt-2"></i>
+                        <span>ตรวจสอบการชำระเงิน</span>
+                    </a>
+                }
+                else if (roleDept.Equals("Support", StringComparison.OrdinalIgnoreCase))
+                {
+                    <a class="admin-nav-item @(activeMenu == "tickets" ? "active" : "")" asp-controller="Support" asp-action="Index">
+                        <i class="ti ti-headset"></i>
+                        <span>รายการแจ้งปัญหา</span>
+                    </a>
+                }
+                else
+                {
+                    <a class="admin-nav-item @(activeMenu == "dashboard" ? "active" : "")" asp-controller="Dev" asp-action="Dashboard">
+                        <i class="ti ti-layout-dashboard"></i>
+                        <span>แดชบอร์ดระบบ</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "places" ? "active" : "")" asp-controller="Dev" asp-action="Places">
+                        <i class="ti ti-map-pin"></i>
+                        <span>สถานที่ท่องเที่ยว</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "pricing" ? "active" : "")" asp-controller="Dev" asp-action="Pricing">
+                        <i class="ti ti-currency-baht"></i>
+                        <span>อัตราค่าโดยสาร</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "issues" ? "active" : "")" asp-controller="Dev" asp-action="Issues">
+                        <i class="ti ti-alert-triangle"></i>
+                        <span>รายการแจ้งปัญหา</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "users" ? "active" : "")" asp-controller="Dev" asp-action="UserList">
+                        <i class="ti ti-users"></i>
+                        <span>ผู้ใช้งานและพนักงาน</span>
+                    </a>
+                }
             </nav>
 
-            <a class="admin-nav-item admin-nav-bottom @(activeMenu == "settings" ? "active" : "")" href="/Admin/Settings">
-                <i class="ti ti-settings" aria-hidden="true"></i>
-                <span>ตั้งค่าบัญชี</span>
-            </a>
+            <div class="admin-nav-bottom">
+                <a class="admin-nav-item @(activeMenu == "settings" ? "active" : "")"
+                   asp-controller="@settingsController" asp-action="Settings">
+                    <i class="ti ti-settings"></i>
+                    <span>ตั้งค่าบัญชี</span>
+                </a>
+                <a class="admin-nav-item text-danger" asp-controller="Account" asp-action="Logout">
+                    <i class="ti ti-logout"></i>
+                    <span>ออกจากระบบ</span>
+                </a>
+            </div>
         </aside>
 
-        <!-- ===== ส่วนเนื้อหาหลัก ===== -->
         <div class="admin-main">
-
             <header class="admin-topbar">
                 <h1 class="admin-topbar-title">@pageTitle</h1>
-                <div class="admin-avatar" title="@adminName">@adminInitials</div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 px-3 py-1 rounded-pill" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-grid-1x2 text-secondary"></i>
+                            <span>@roleDept</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 small">
+                            <li><h6 class="dropdown-header">สลับฝ่ายงาน</h6></li>
+                            <li><a class="dropdown-item" asp-controller="Support" asp-action="Index"><i class="bi bi-headset me-2"></i>ฝ่ายซัพพอร์ต (Support)</a></li>
+                            <li><a class="dropdown-item" asp-controller="Dev" asp-action="Dashboard"><i class="bi bi-code-slash me-2"></i>ฝ่ายพัฒนาระบบ (Dev)</a></li>
+                            <li><a class="dropdown-item" asp-controller="Marketing" asp-action="Dashboard"><i class="bi bi-megaphone me-2"></i>ฝ่ายการตลาด (Marketing)</a></li>
+                            <li><a class="dropdown-item" asp-controller="Accounting" asp-action="Dashboard"><i class="bi bi-calculator me-2"></i>ฝ่ายบัญชี (Accounting)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" asp-controller="Customer" asp-action="Home"><i class="bi bi-compass me-2"></i>หน้าแอปพลิเคชัน</a></li>
+                        </ul>
+                    </div>
+                    <a asp-controller="@settingsController" asp-action="Settings" class="admin-avatar" title="@username">@adminInitials</a>
+                </div>
             </header>
 
             <main class="admin-content">
                 @RenderBody()
             </main>
-
         </div>
     </div>
 
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

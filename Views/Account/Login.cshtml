@@ -1,95 +1,155 @@
 @model Suttipong_9922_L004.ViewModels.LoginViewModel
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = "เข้าสู่ระบบ - ทางลัด";
+    Layout = null;
 }
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
-<style>
-    /* hide the browser's own native password-reveal icon (Edge) so there's only one icon */
-    input[type="password"]::-ms-reveal,
-    input[type="password"]::-ms-clear {
-        display: none;
-    }
-</style>
-
-<div class="container-fluid bg-light min-vh-100 d-flex align-items-center justify-content-center py-5">
-    <div class="card shadow-lg border-0 rounded-4 overflow-hidden" style="max-width: 960px; width: 100%;">
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f4f7f5;
+            font-family: "Noto Sans Thai", "Inter", "Segoe UI", sans-serif;
+            color: #1e293b;
+        }
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
+        }
+        .brand-panel {
+            background: linear-gradient(145deg, #0b3d2e 0%, #145e46 100%);
+        }
+        .btn-tanglat {
+            background-color: #0b3d2e;
+            border-color: #0b3d2e;
+            color: #fff;
+            font-weight: 600;
+        }
+        .btn-tanglat:hover {
+            background-color: #145e46;
+            border-color: #145e46;
+            color: #fff;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #0b3d2e;
+        }
+        .role-pill {
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #475569;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: all 0.15s;
+        }
+        .role-pill:hover {
+            background: #0b3d2e;
+            color: #fff;
+            border-color: #0b3d2e;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center py-4">
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="max-width: 920px; width: 100%;">
         <div class="row g-0">
 
-            <!-- Form column -->
             <div class="col-12 col-lg-6 p-4 p-md-5 bg-white">
-
-                <!-- Mobile-only wordmark (brand panel hidden below lg) -->
-                <div class="d-lg-none mb-4 fs-4 fw-bold text-primary">
-                    <i class="bi bi-signpost-split-fill"></i> ทางลัด
+                <div class="d-lg-none mb-3 fs-5 fw-bold" style="color:#0b3d2e;">
+                    <i class="bi bi-signpost-split-fill me-1"></i> ทางลัด
                 </div>
 
-                <ul class="nav nav-pills mb-4">
+                <ul class="nav nav-pills mb-4 bg-light p-1 rounded-3 d-inline-flex">
                     <li class="nav-item">
-                        <a class="nav-link active" asp-controller="Account" asp-action="Login">Login</a>
+                        <a class="nav-link active px-4" asp-controller="Account" asp-action="Login">เข้าสู่ระบบ</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link link-secondary" asp-controller="Account" asp-action="Register">Register</a>
+                        <a class="nav-link link-secondary px-4" asp-controller="Account" asp-action="Register">สมัครสมาชิก</a>
                     </li>
                 </ul>
 
-                <h4 class="fw-bold mb-1">ยินดีต้อนรับกลับ</h4>
-                <p class="text-secondary mb-4">เข้าสู่ระบบเพื่อวางแผนเส้นทางของคุณ</p>
+                <h4 class="fw-bold mb-1">ยินดีต้อนรับ</h4>
+                <p class="text-secondary small mb-4">เข้าสู่ระบบเพื่อจัดการเส้นทางและบริการของคุณ</p>
 
                 <form asp-controller="Account" asp-action="Login" method="post">
-
                     <input type="hidden" name="Email" value="@ViewBag.Email" />
                     <input type="hidden" name="PhoneNumber" value="@ViewBag.PhoneNumber" />
                     <input type="hidden" name="Source" value="@ViewBag.Source" />
 
                     <div class="mb-3">
-                        <label for="Username" class="form-label">อีเมลหรือชื่อผู้ใช้</label>
+                        <label for="Username" class="form-label fw-semibold small">ชื่อผู้ใช้หรืออีเมล</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
-                            <input asp-for="Username" class="form-control" placeholder="กรอกชื่อผู้ใช้งาน">
+                            <span class="input-group-text bg-white text-secondary"><i class="bi bi-person"></i></span>
+                            <input asp-for="Username" class="form-control" placeholder="กรอกชื่อผู้ใช้งาน" required>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="Password" class="form-label">รหัสผ่าน</label>
+                        <label for="Password" class="form-label fw-semibold small">รหัสผ่าน</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
-                            <input asp-for="Password" type="password" class="form-control" placeholder="กรอกรหัสผ่าน">
+                            <span class="input-group-text bg-white text-secondary"><i class="bi bi-lock"></i></span>
+                            <input asp-for="Password" type="password" class="form-control" placeholder="กรอกรหัสผ่าน" required>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div class="form-check">
                             <input asp-for="RememberMe" class="form-check-input" type="checkbox">
-                            <label class="form-check-label text-secondary" for="RememberMe">จดจำฉัน</label>
+                            <label class="form-check-label text-secondary small" for="RememberMe">จดจำฉัน</label>
                         </div>
-                        <a href="#" class="link-primary text-decoration-none small">ลืมรหัสผ่าน?</a>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 mb-3">เข้าสู่ระบบ</button>
-                    <p class="text-danger text-center">@ViewBag.Status</p>
-                    <p class="text-center text-secondary small mb-0">
-                        ยังไม่มีบัญชี?
-                        <a asp-controller="Account" asp-action="Register" class="link-primary text-decoration-none">สมัครสมาชิก</a>
-                    </p>
+                    <button type="submit" class="btn btn-tanglat w-100 py-2 mb-3 rounded-3">
+                        เข้าสู่ระบบ
+                    </button>
 
+                    @if (!string.IsNullOrEmpty(ViewBag.Status))
+                    {
+                        <div class="alert alert-danger py-2 small text-center">@ViewBag.Status</div>
+                    }
                 </form>
+
+                <div class="border-top pt-3 mt-3">
+                    <div class="text-secondary mb-2" style="font-size: 12px;">เข้าใช้งานตามสิทธิ์:</div>
+                    <div class="d-flex flex-wrap gap-1">
+                        <a asp-controller="Account" asp-action="QuickLogin" asp-route-roleType="Customer" class="role-pill"><i class="bi bi-compass me-1"></i>ลูกค้า</a>
+                        <a asp-controller="Account" asp-action="QuickLogin" asp-route-roleType="Support" class="role-pill"><i class="bi bi-headset me-1"></i>Support</a>
+                        <a asp-controller="Account" asp-action="QuickLogin" asp-route-roleType="Dev" class="role-pill"><i class="bi bi-code-slash me-1"></i>Dev</a>
+                        <a asp-controller="Account" asp-action="QuickLogin" asp-route-roleType="Marketing" class="role-pill"><i class="bi bi-megaphone me-1"></i>Marketing</a>
+                        <a asp-controller="Account" asp-action="QuickLogin" asp-route-roleType="Accounting" class="role-pill"><i class="bi bi-calculator me-1"></i>Accounting</a>
+                        <a asp-controller="Account" asp-action="QuickLogin" asp-route-roleType="Admin" class="role-pill"><i class="bi bi-people me-1"></i>Admin</a>
+                    </div>
+                </div>
             </div>
 
-            <!-- Logo / brand column: placeholder area reserved for the real logo image -->
-            <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center bg-primary p-5">
+            <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center brand-panel p-5">
                 <div class="text-center text-white">
-
-                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white bg-opacity-25 mb-3"
-                         style="width:180px; height:180px;">
-                        <span class="fs-5 fw-semibold">Logo</span>
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white mb-4 shadow-sm"
+                         style="width:150px; height:150px; overflow:hidden;">
+                        <img src="~/img/tanglat-icon.png" alt="Logo" style="max-width:110px; max-height:110px;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                        <i class="bi bi-signpost-split-fill text-success" style="font-size: 56px; display:none;"></i>
                     </div>
-
-                    <div class="fs-4 fw-bold">ทางลัด</div>
+                    <h3 class="fw-bold mb-2">ทางลัด</h3>
+                    <p class="text-white-50 small mb-4 px-4">
+                        ระบบแนะนำสถานที่ท่องเที่ยวและวางแผนเส้นทางขนส่งสาธารณะในกรุงเทพมหานคร
+                    </p>
+                    <div class="d-flex justify-content-center gap-4 small text-white-50">
+                        <span><i class="bi bi-bus-front me-1"></i>รถโดยสาร</span>
+                        <span><i class="bi bi-train-front me-1"></i>รถไฟฟ้า</span>
+                        <span><i class="bi bi-scooter me-1"></i>มอเตอร์ไซค์</span>
+                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 </div>
+</body>
+</html>

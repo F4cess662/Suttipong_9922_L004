@@ -1,0 +1,100 @@
+@model IEnumerable<Suttipong_9922_L004.Models.Location>
+@{
+    ViewData["Title"] = "จัดการสถานที่ท่องเที่ยว";
+    Layout = "_AdminLayout";
+}
+
+@if (TempData["DevMsg"] != null)
+{
+    <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["DevMsg"]
+    </div>
+}
+
+<div class="admin-panel mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <form asp-controller="Dev" asp-action="Places" method="get" class="flex-grow-1" style="max-width: 460px;">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-0"><i class="bi bi-search text-secondary"></i></span>
+                <input type="text" name="search" value="@ViewBag.Search" class="form-control bg-light border-0" placeholder="ค้นหาชื่อสถานที่ หรือเขต" />
+                <button type="submit" class="btn btn-tanglat px-4">ค้นหา</button>
+            </div>
+        </form>
+
+        <button type="button" class="btn btn-tanglat rounded-3 px-3" data-bs-toggle="collapse" data-bs-target="#addPlaceCollapse">
+            <i class="bi bi-plus-lg me-1"></i>เพิ่มสถานที่
+        </button>
+    </div>
+
+    <div class="collapse mt-4 pt-3 border-top" id="addPlaceCollapse">
+        <h6 class="fw-bold mb-3">เพิ่มสถานที่ใหม่</h6>
+        <form asp-controller="Dev" asp-action="AddPlace" method="post" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">ชื่อสถานที่</label>
+                <input type="text" name="name" class="form-control bg-light border-0" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">หมวดหมู่</label>
+                <select name="category" class="form-select bg-light border-0">
+                    <option value="attraction">สถานที่ท่องเที่ยว</option>
+                    <option value="restaurant">ร้านอาหาร</option>
+                    <option value="shopping">ช้อปปิ้ง</option>
+                    <option value="transit_station">จุดเชื่อมต่อรถสาธารณะ</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">ที่อยู่ / เขต</label>
+                <input type="text" name="address" class="form-control bg-light border-0" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">ละติจูด (Latitude)</label>
+                <input type="number" step="0.00000001" name="latitude" value="13.75250000" class="form-control bg-light border-0" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">ลองจิจูด (Longitude)</label>
+                <input type="number" step="0.00000001" name="longitude" value="100.50140000" class="form-control bg-light border-0" required />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">ลิงก์รูปภาพ</label>
+                <input type="url" name="imageUrl" class="form-control bg-light border-0" placeholder="https://..." />
+            </div>
+            <div class="col-12">
+                <label class="form-label small fw-semibold">รายละเอียด</label>
+                <textarea name="description" rows="2" class="form-control bg-light border-0" required></textarea>
+            </div>
+            <div class="col-12 text-end">
+                <button type="submit" class="btn btn-tanglat px-4 rounded-3"><i class="bi bi-check-lg me-1"></i>บันทึก</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4">
+    @foreach (var loc in Model)
+    {
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative bg-white">
+                <div class="position-absolute top-0 end-0 m-3 z-2">
+                    <form asp-controller="Dev" asp-action="DeletePlace" method="post" onsubmit="return confirm('ยืนยันการลบ @loc.Name ?');">
+                        <input type="hidden" name="id" value="@loc.Id" />
+                        <button type="submit" class="btn btn-sm btn-light text-danger rounded-3 shadow-sm">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <img src="@(string.IsNullOrEmpty(loc.ImageUrl) ? "https://images.unsplash.com/photo-1563492065599-3520f775eeed?auto=format&fit=crop&w=600&q=80" : loc.ImageUrl)"
+                     class="card-img-top" alt="@loc.Name" style="height: 165px; object-fit: cover;" />
+
+                <div class="card-body p-3">
+                    <h6 class="fw-bold mb-1">@loc.Name</h6>
+                    <p class="small text-secondary mb-2">@loc.Description</p>
+                    <div class="small bg-light p-2 rounded-3 text-secondary">
+                        <div><i class="bi bi-crosshair me-1"></i>@loc.Latitude, @loc.Longitude</div>
+                        <div><i class="bi bi-geo-alt me-1"></i>@(loc.Address ?? "กรุงเทพมหานคร")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -9,5 +9,8 @@ namespace Suttipong_9922_L004.ViewModels
         public string? PhoneNumber { get; set; }
         public string? Role { get; set; }
         public string? Status { get; set; }
+        public string? Department { get; set; }
+        public string? Position { get; set; }
+        public decimal? Salary { get; set; }
     }
 }

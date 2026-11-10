@@ -1,0 +1,77 @@
+@model IEnumerable<Suttipong_9922_L004.Models.Payment>
+@{
+    ViewData["Title"] = "ภาพรวมการเงิน";
+    Layout = "_AdminLayout";
+    decimal totalRev = ViewBag.TotalRevenue as decimal? ?? 0m;
+    decimal pendingRev = ViewBag.PendingRevenue as decimal? ?? 0m;
+    decimal totalPayroll = ViewBag.TotalPayroll as decimal? ?? 0m;
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+        <div class="admin-panel h-100 mb-0">
+            <div class="text-secondary small fw-semibold mb-2">รายรับยืนยันแล้ว</div>
+            <div class="d-flex justify-content-between align-items-end">
+                <div class="fs-2 fw-bold text-success">@totalRev.ToString("N2") ฿</div>
+                <span class="badge bg-success-subtle text-success p-2 rounded-3"><i class="bi bi-cash-stack fs-4"></i></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="admin-panel h-100 mb-0">
+            <div class="text-secondary small fw-semibold mb-2">ยอดรอตรวจสอบ (@ViewBag.PendingCount)</div>
+            <div class="d-flex justify-content-between align-items-end">
+                <div class="fs-2 fw-bold text-warning">@pendingRev.ToString("N2") ฿</div>
+                <span class="badge bg-warning-subtle text-dark p-2 rounded-3"><i class="bi bi-hourglass-split fs-4"></i></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="admin-panel h-100 mb-0">
+            <div class="text-secondary small fw-semibold mb-2">งบเงินเดือนพนักงานต่อเดือน</div>
+            <div class="d-flex justify-content-between align-items-end">
+                <div class="fs-2 fw-bold text-primary">@totalPayroll.ToString("N2") ฿</div>
+                <span class="badge bg-primary-subtle text-primary p-2 rounded-3"><i class="bi bi-people fs-4"></i></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="admin-panel">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-receipt-cutoff text-primary me-2"></i>ธุรกรรมล่าสุด</h6>
+        <div class="d-flex gap-2">
+            <a asp-action="Payments" class="btn btn-sm btn-tanglat rounded-3">ตรวจสอบการชำระเงิน</a>
+            <a asp-action="Payroll" class="btn btn-sm btn-light border rounded-3">เงินเดือนพนักงาน</a>
+        </div>
+    </div>
+
+    <div class="d-flex flex-column gap-2">
+        @foreach (var p in Model)
+        {
+            <div class="border rounded-3 p-3 bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-white border d-flex align-items-center justify-content-center text-dark" style="width:42px;height:42px;">
+                        <i class="bi @(p.SubscriptionPlanId != null ? "bi-gem text-success" : "bi-megaphone text-primary")"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold small">
+                            @(p.SubscriptionPlan != null ? p.SubscriptionPlan.Name : p.Advertisement != null ? p.Advertisement.Title : "รายการชำระเงิน #" + p.Id)
+                        </div>
+                        <div class="small text-secondary">
+                            @p.TransactionRef • @p.PaymentMethod • @(p.User?.UserName ?? "customer")
+                        </div>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold">+@p.Amount.ToString("N2") ฿</div>
+                    <span class="badge rounded-pill @(p.PaymentStatus == "completed" ? "bg-success" : p.PaymentStatus == "pending" ? "bg-warning text-dark" : "bg-danger")">
+                        @(p.PaymentStatus == "completed" ? "ยืนยันแล้ว" : p.PaymentStatus == "pending" ? "รอตรวจสอบ" : "ไม่สำเร็จ")
+                    </span>
+                </div>
+            </div>
+        }
+    </div>
+</div>

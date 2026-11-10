@@ -1,0 +1,60 @@
+@{
+    ViewData["Title"] = "ชำระเงิน";
+    Layout = "CustomerLayout";
+    decimal amount = ViewBag.Amount as decimal? ?? 99.00m;
+    string itemTitle = ViewBag.ItemTitle as string ?? "Tang-Lat VIP Monthly";
+    int? planId = ViewBag.PlanId as int?;
+    int? adId = ViewBag.AdId as int?;
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-7 col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white text-center">
+            <span class="badge bg-success-subtle text-success mb-2 align-self-center px-3 py-1 rounded-pill">
+                <i class="bi bi-qr-code-scan me-1"></i>Thai QR PromptPay
+            </span>
+            <h5 class="fw-bold mb-1">@itemTitle</h5>
+            <div class="fs-3 fw-bold text-success mb-3">@amount.ToString("N2") บาท</div>
+
+            <div class="p-3 border rounded-4 bg-light d-inline-block mx-auto mb-3" style="width: 220px; height: 220px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=TangLatPromptPay-@amount"
+                     alt="PromptPay QR" class="img-fluid rounded"
+                     onerror="this.style.display='none'; document.getElementById('qrFallback').style.display='flex';" />
+                <div id="qrFallback" style="display:none; height:100%;" class="flex-column align-items-center justify-content-center text-dark">
+                    <i class="bi bi-qr-code" style="font-size: 88px;"></i>
+                </div>
+            </div>
+
+            <form asp-controller="Customer" asp-action="ConfirmPayment" method="post" class="text-start">
+                <input type="hidden" name="planId" value="@planId" />
+                <input type="hidden" name="adId" value="@adId" />
+                <input type="hidden" name="amount" value="@amount" />
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold">ช่องทางชำระเงิน</label>
+                        <select name="paymentMethod" class="form-select form-select-sm bg-light border-0 py-2">
+                            <option value="promptpay" selected>PromptPay</option>
+                            <option value="bank_transfer">โอนผ่านธนาคาร</option>
+                            <option value="credit_card">บัตรเครดิต</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold">รหัสอ้างอิง</label>
+                        <input type="text" name="transactionRef" class="form-control form-control-sm bg-light border-0 py-2"
+                               value="TXN-@DateTime.Now.ToString("MMddHHmm")" required />
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-brand py-2 rounded-3">
+                        <i class="bi bi-check2-circle me-1"></i>ยืนยันการชำระเงิน
+                    </button>
+                    <a asp-controller="Customer" asp-action="Membership" class="btn btn-light text-secondary small rounded-3 py-2">
+                        ยกเลิก
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

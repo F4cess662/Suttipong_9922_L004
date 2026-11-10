@@ -1,7 +1,15 @@
 @{
-    ViewData["Title"] = "Admin Page";
+    ViewData["Title"] = "แดชบอร์ดระบบ";
+    ViewData["Department"] = "Dev";
+    ViewData["ActiveMenu"] = "dashboard";
     Layout = "_AdminLayout";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="admin-panel p-4 text-center">
+    <h5 class="fw-bold mb-2">ระบบจัดการหลังบ้าน (ฝ่ายพัฒนาระบบ Dev)</h5>
+    <p class="text-secondary small mb-3">จัดการข้อมูลสถานที่ท่องเที่ยว อัตราค่าโดยสาร รายการแจ้งปัญหา และบัญชีพนักงาน</p>
+    <div class="d-flex justify-content-center gap-2">
+        <a asp-controller="Dev" asp-action="Dashboard" class="btn btn-tanglat px-4 rounded-3">เปิดแดชบอร์ดระบบ</a>
+        <a asp-controller="Dev" asp-action="UserList" class="btn btn-light border px-4 rounded-3">จัดการผู้ใช้งานและพนักงาน</a>
+    </div>
+</div>

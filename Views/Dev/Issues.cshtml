@@ -1,0 +1,54 @@
+@model IEnumerable<Suttipong_9922_L004.Models.SupportTicket>
+@{
+    ViewData["Title"] = "รายการแจ้งปัญหาระบบ";
+    Layout = "_AdminLayout";
+}
+
+@if (TempData["DevIssueMsg"] != null)
+{
+    <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["DevIssueMsg"]
+    </div>
+}
+
+<div class="admin-panel">
+    <form asp-controller="Dev" asp-action="Issues" method="get" class="mb-4" style="max-width:440px;">
+        <div class="input-group">
+            <span class="input-group-text bg-light border-0"><i class="bi bi-search text-secondary"></i></span>
+            <input type="text" name="search" value="@ViewBag.Search" class="form-control bg-light border-0" placeholder="ค้นหารายการแจ้งปัญหา" />
+            <button type="submit" class="btn btn-tanglat px-4">ค้นหา</button>
+        </div>
+    </form>
+
+    <div class="d-flex flex-column gap-3">
+        @foreach (var item in Model)
+        {
+            <div class="border rounded-4 p-3 bg-white d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-light border text-danger d-flex align-items-center justify-content-center" style="width:44px;height:44px;">
+                        <i class="bi bi-tools fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">@item.Subject</div>
+                        <div class="small text-secondary">@item.Description</div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge rounded-pill @(item.Status == "resolved" ? "bg-success" : "bg-warning text-dark")">
+                        @(item.Status == "resolved" ? "เสร็จสิ้น" : "รอดำเนินการ")
+                    </span>
+                    @if (item.Status != "resolved")
+                    {
+                        <form asp-controller="Dev" asp-action="ResolveIssue" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button type="submit" class="btn btn-sm btn-tanglat rounded-3 px-3">
+                                <i class="bi bi-check2 me-1"></i>ปิดงาน
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

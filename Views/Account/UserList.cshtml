@@ -1,0 +1,132 @@
+@model IEnumerable<Suttipong_9922_L004.ViewModels.UserListViewModel>
+@{
+    ViewData["Title"] = "User List";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+<div class="container-fluid bg-light min-vh-100 py-5">
+    <div class="container" style="max-width: 1100px;">
+
+        <!-- Page header -->
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb small mb-1">
+                        <li class="breadcrumb-item"><a href="#" class="link-secondary text-decoration-none">แดชบอร์ด</a>
+                        </li>
+                        <li class="breadcrumb-item active">จัดการผู้ใช้งาน</li>
+                    </ol>
+                </nav>
+                <h4 class="fw-bold mb-0">รายชื่อผู้ใช้งาน</h4>
+            </div>
+            <a asp-controller="Account" asp-action="AddUser" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> เพิ่มผู้ใช้งาน
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0 rounded-4">
+
+            <!-- ช่องค้นหา (กด Enter เพื่อค้นหาจาก Database ได้เลย) -->
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                <form asp-controller="Account" asp-action="UserList" method="get" style="max-width: 320px;">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="search" name="search" value="@ViewBag.Search" class="form-control"
+                               placeholder="ค้นหาชื่อ, อีเมล...">
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-secondary small text-uppercase">
+                                <th style="width:56px;"></th>
+                                <th>ชื่อผู้ใช้งาน</th>
+                                <th>อีเมล</th>
+                                <th>เบอร์โทรศัพท์</th>
+                                <th>สิทธิ์</th>
+                                <th>สถานะ</th>
+                                <th class="text-end">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                // ดึงตัวอักษรแรกของ Username มาทำเป็น Avatar วงกลม
+                                var initial = !string.IsNullOrEmpty(item.Username) ? item.Username.Substring(0, 1).ToUpper()
+                            : "U";
+
+                                <tr>
+                                    <td>
+                                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary-emphasis fw-semibold"
+                                             style="width:40px;height:40px;">
+                                            @initial
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@item.FullName</div>
+                                        <div class="text-secondary small">@item.Username</div>
+                                    </td>
+                                    <td>@item.Email</td>
+                                    <td>@item.PhoneNumber</td>
+                                    <td>
+                                        @if (item.Role == "admin")
+                                        {
+                                            <span class="badge rounded-pill text-bg-primary">ผู้ดูแลระบบ</span>
+                                        }
+                                        else if (item.Role == "employee")
+                                        {
+                                            <span class="badge rounded-pill text-bg-info">พนักงาน</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge rounded-pill text-bg-secondary">ผู้ใช้งานทั่วไป</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.Status == "active")
+                                        {
+                                            <span class="badge rounded-pill text-bg-success">ใช้งานอยู่</span>
+                                        }
+                                        else if (item.Status == "pending")
+                                        {
+                                            <span class="badge rounded-pill text-bg-warning">รออนุมัติ</span>
+                                        }
+                                        else
+                                        {
+                                            <span
+                                            class="badge rounded-pill text-bg-light text-secondary border">ปิดใช้งาน</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <!-- ปุ่มแก้ไข (U - Update) ส่ง id ไปหน้า EditUser -->
+                                        <a asp-controller="Account" asp-action="EditUser" asp-route-id="@item.Id" class="btn btn-sm btn-light" title="แก้ไข">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+
+                                        <!-- ปุ่มลบ (D - Delete) ส่ง id ไปลบพร้อมกล่องยืนยันก่อนลบ -->
+                                        <form asp-controller="Account" asp-action="DeleteUser" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('คุณต้องการลบผู้ใช้งาน @item.Username ใช่หรือไม่?');">
+                                            <button type="submit" class="btn btn-sm btn-light text-danger" title="ลบ">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="6" class="fw-normal text-secondary border-top">รวมผู้ใช้งานทั้งหมด</th>
+                                        <th class="text-end border-top">@Model.Count() คน</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>

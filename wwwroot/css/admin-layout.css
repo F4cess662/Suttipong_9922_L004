@@ -1,0 +1,212 @@
+:root {
+    --admin-bg: #F4F3EF;
+    --admin-surface: #FFFFFF;
+    --admin-surface-1: #EFEEE8;
+    --admin-border: #E1DFD6;
+    --admin-text-primary: #201F1C;
+    --admin-text-secondary: #6B6A64;
+    --admin-accent-bg: #E6F1FB;
+    --admin-accent-text: #0C447C;
+    --admin-danger-text: #A32D2D;
+    --admin-warning-text: #854F0B;
+    --admin-success-text: #3B6D11;
+    --admin-radius: 8px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Noto Sans Thai", "Segoe UI", sans-serif;
+    background: var(--admin-bg);
+    color: var(--admin-text-primary);
+}
+
+.admin-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ---------- Sidebar ---------- */
+.admin-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--admin-surface);
+    border-right: 1px solid var(--admin-border);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 12px;
+}
+
+.admin-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px 20px;
+}
+
+.admin-brand-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--admin-accent-bg);
+    color: var(--admin-accent-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.admin-brand-text {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.admin-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--admin-radius);
+    color: var(--admin-text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.admin-nav-item i {
+    font-size: 18px;
+}
+
+.admin-nav-item:hover {
+    background: var(--admin-surface-1);
+}
+
+.admin-nav-item.active {
+    background: var(--admin-surface-1);
+    color: var(--admin-text-primary);
+    font-weight: 600;
+}
+
+.admin-nav-bottom {
+    margin-top: auto;
+}
+
+/* ---------- Main area ---------- */
+.admin-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.admin-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: var(--admin-surface);
+    border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-topbar-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.admin-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--admin-accent-bg);
+    color: var(--admin-accent-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.admin-content {
+    padding: 24px;
+    overflow: auto;
+}
+
+/* ---------- ส่วนประกอบที่หน้าลูกเรียกใช้ต่อจาก Layout นี้ ---------- */
+.admin-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.admin-metric-card {
+    background: var(--admin-surface-1);
+    border-radius: var(--admin-radius);
+    padding: 16px;
+}
+
+.admin-metric-label {
+    font-size: 13px;
+    color: var(--admin-text-secondary);
+    margin: 0 0 6px;
+}
+
+.admin-metric-value {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.admin-panel {
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+.admin-panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 10px;
+}
+
+.admin-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--admin-border);
+    font-size: 13px;
+}
+
+.admin-row:last-child {
+    border-bottom: none;
+}
+
+.text-danger { color: var(--admin-danger-text); }
+.text-warning { color: var(--admin-warning-text); }
+.text-success { color: var(--admin-success-text); }
+
+@media (max-width: 768px) {
+    .admin-sidebar {
+        width: 64px;
+    }
+
+    .admin-brand-text,
+    .admin-nav-item span {
+        display: none;
+    }
+
+    .admin-card-grid {
+        grid-template-columns: 1fr;
+    }
+}

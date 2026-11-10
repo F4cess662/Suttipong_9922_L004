@@ -1,0 +1,74 @@
+@{
+    // ตั้งค่าหัวข้อของแต่ละหน้าได้ที่ตัวหน้านั้นๆ ด้วย ViewData["Title"] = "ชื่อหน้า";
+    var pageTitle = ViewData["Title"] as string ?? "แดชบอร์ด";
+
+    // ใช้บอกว่าเมนูไหนใน Sidebar ควรถูกไฮไลต์อยู่ ตั้งค่าที่ตัวหน้าด้วย ViewData["ActiveMenu"] = "dashboard";
+    // ค่าที่ใช้ได้: dashboard, pricing, places, issues, settings
+    var activeMenu = ViewData["ActiveMenu"] as string ?? "dashboard";
+
+   
+    var adminInitials = ViewData["AdminInitials"] as string ?? "AD";
+    var adminName = ViewData["AdminName"] as string ?? "แอดมิน";
+}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@pageTitle - ทางลัด แอดมิน</title>
+    <link rel="stylesheet" href="~/css/admin-layout.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css" />
+</head>
+<body>
+    <div class="admin-shell">
+
+        <!-- ===== Sidebar เมนูหลัก ===== -->
+        <aside class="admin-sidebar">
+            <div class="admin-brand">
+                <span class="admin-brand-icon"><i class="ti ti-route" aria-hidden="true"></i></span>
+                <span class="admin-brand-text">ทางลัด แอดมิน</span>
+            </div>
+
+            <nav class="admin-nav">
+                <a class="admin-nav-item @(activeMenu == "dashboard" ? "active" : "")" href="/Admin/Dashboard">
+                    <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
+                    <span>แดชบอร์ด</span>
+                </a>
+                <a class="admin-nav-item @(activeMenu == "pricing" ? "active" : "")" href="/Admin/Pricing">
+                    <i class="ti ti-currency-baht" aria-hidden="true"></i>
+                    <span>ราคาการเดินทาง</span>
+                </a>
+                <a class="admin-nav-item @(activeMenu == "places" ? "active" : "")" href="/Admin/Places">
+                    <i class="ti ti-map-pin-star" aria-hidden="true"></i>
+                    <span>สถานที่ยอดนิยม</span>
+                </a>
+                <a class="admin-nav-item @(activeMenu == "issues" ? "active" : "")" href="/Admin/Issues">
+                    <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+                    <span>ปัญหาระบบ</span>
+                </a>
+            </nav>
+
+            <a class="admin-nav-item admin-nav-bottom @(activeMenu == "settings" ? "active" : "")" href="/Admin/Settings">
+                <i class="ti ti-settings" aria-hidden="true"></i>
+                <span>ตั้งค่าบัญชี</span>
+            </a>
+        </aside>
+
+        <!-- ===== ส่วนเนื้อหาหลัก ===== -->
+        <div class="admin-main">
+
+            <header class="admin-topbar">
+                <h1 class="admin-topbar-title">@pageTitle</h1>
+                <div class="admin-avatar" title="@adminName">@adminInitials</div>
+            </header>
+
+            <main class="admin-content">
+                @RenderBody()
+            </main>
+
+        </div>
+    </div>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Tang-Lat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #eef5f0;
+        }
+
+        /* ---------- Top bar ---------- */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background-color: #0b3d2e;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 100;
+        }
+
+        .brand-name {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .top-bar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lang-toggle {
+            background-color: transparent;
+            border: 1px solid #b7e4c7;
+            width: 80px;
+            height: 30px;
+            color: #b7e4c7;
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .profile-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background-color: #b7e4c7;
+            color: #0b3d2e;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
+        /* ---------- Body ---------- */
+        .body-content {
+            min-height: calc(100vh - 56px - 64px);
+            padding: 16px;
+            position: relative;
+        }
+
+        .locate-btn {
+            position: fixed;
+            right: 16px;
+            bottom: 80px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            border: 1px solid #b7e4c7;
+            color: #0b3d2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+            cursor: pointer;
+            z-index: 90;
+        }
+
+        .locate-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* ---------- Bottom bar ---------- */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 72px;
+            background-color: #ffffff;
+            border-top: 1px solid #b7e4c7;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            color: #7a7a7a;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: #0b3d2e;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            position: relative;
+        }
+
+        .nav-icon svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+        }
+
+        .nav-label {
+            font-size: 10px;
+        }
+
+        .badge {
+            position: absolute;
+            top: -6px;
+            right: -10px;
+            background-color: #b7e4c7;
+            color: #0b3d2e;
+            font-size: 9px;
+            font-weight: bold;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-bar">
+        <span class="brand-name"><img src="/Suttipong_9922_L004/wwwroot/img/tanglat-icon.png" alt="ICON"></span>
+        <div class="top-bar-actions">
+            <button id="langToggle" class="lang-toggle" onclick="toggleLanguage()">TH / EN</button>
+            <a href="/Customer/Profile" class="profile-icon">SS</a>
+        </div>
+    </header>
+
+    <main class="body-content">
+        @RenderBody()
+
+        <button type="button" class="locate-btn" onclick="locateMe()" aria-label="ไปยังตำแหน่งปัจจุบัน">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="22" y1="12" x2="18" y2="12"></line>
+                <line x1="6" y1="12" x2="2" y2="12"></line>
+                <line x1="12" y1="6" x2="12" y2="2"></line>
+                <line x1="12" y1="22" x2="12" y2="18"></line>
+            </svg>
+        </button>
+    </main>
+
+    <nav class="bottom-bar">
+        <a href="/Customer/Home" class="nav-item active">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </span>
+            <span class="nav-label">หน้าหลัก</span>
+        </a>
+        <a href="/Customer/Trip" class="nav-item">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                    <line x1="8" y1="2" x2="8" y2="18"></line>
+                    <line x1="16" y1="6" x2="16" y2="22"></line>
+                </svg>
+                <span class="badge">3</span>
+            </span>
+            <span class="nav-label">ทริปของฉัน</span>
+        </a>
+        <a href="/Customer/Report" class="nav-item">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </span>
+            <span class="nav-label">แจ้งปัญหา</span>
+        </a>
+        <a href="/Customer/Membership" class="nav-item">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+            </span>
+            <span class="nav-label">สมาชิก</span>
+        </a>
+    </nav>
+
+    <script>
+        function toggleLanguage() {
+            var langButton = document.getElementById("langToggle");
+            var currentLang = langButton.innerText;
+
+            if (currentLang.indexOf("TH / EN") === 0) {
+                langButton.innerText = "EN / TH";
+            } else {
+                langButton.innerText = "TH / EN";
+            }
+        }
+
+        function locateMe() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+
+                    // TODO: เชื่อมกับตัวแปร map จริงในหน้านั้นๆ เช่น map.panTo({ lat: lat, lng: lng });
+                    console.log("ตำแหน่งปัจจุบัน: " + lat + ", " + lng);
+                }, function (error) {
+                    alert("ไม่สามารถระบุตำแหน่งได้ กรุณาเปิดสิทธิ์การเข้าถึงตำแหน่ง");
+                });
+            } else {
+                alert("เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง");
+            }
+        }
+    </script>
+
+</body>
+</html>

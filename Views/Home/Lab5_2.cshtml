@@ -1,0 +1,21 @@
+
+@model IEnumerable<Suttipong_9922_L004.ViewModels.Lab5ViewModel>
+
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Lastname</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+        <tr>
+            <td>@item.Name</td>
+            <td>@item.Lastname</td>
+        </tr>
+        }
+    </tbody>
+</table>

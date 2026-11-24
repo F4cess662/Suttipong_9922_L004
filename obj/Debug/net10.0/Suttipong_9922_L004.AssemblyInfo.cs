@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Suttipong_9922_L004")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+36be41a04ccd5f149804be9c51c20ac6c4d15db2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+11253f8b3bd4bf71531e7232d39b84b3422e0291")]
 [assembly: System.Reflection.AssemblyProductAttribute("Suttipong_9922_L004")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Suttipong_9922_L004")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -197,13 +197,13 @@ INSERT INTO `labstudent` (`StdId`, `StdPassword`, `StdName`, `StdLastname`) VALU
 
 -- เพิ่มบัญชีผู้ใช้งานครบทุก Role และแผนก (รหัสผ่านทุกบัญชีคือ 1234)
 INSERT INTO `users` (`id`, `userName`, `email`, `password`, `phone_number`, `role`, `status`, `last_active`) VALUES
-(1, 'customer01', 'customer@tanglat.com', '1234', '0812345678', 'customer', 'active', NOW()),
-(2, 'vip_user', 'vip@tanglat.com', '1234', '0898765432', 'customer', 'active', NOW()),
-(3, 'support01', 'support@tanglat.com', '1234', '0821112222', 'employee', 'active', NOW()),
-(4, 'dev01', 'dev@tanglat.com', '1234', '0833334444', 'employee', 'active', NOW()),
-(5, 'marketing01', 'marketing@tanglat.com', '1234', '0845556666', 'employee', 'active', NOW()),
-(6, 'accounting01', 'accounting@tanglat.com', '1234', '0857778888', 'employee', 'active', NOW()),
-(7, 'admin01', 'admin@tanglat.com', '1234', '0809990000', 'admin', 'active', NOW());
+(1, 'customer01', 'customer@tanglat.com', SHA2('1234', 256), '0812345678', 'customer', 'active', NOW()),
+(2, 'vip_user', 'vip@tanglat.com', SHA2('1234', 256), '0898765432', 'customer', 'active', NOW()),
+(3, 'support01', 'support@tanglat.com', SHA2('1234', 256), '0821112222', 'employee', 'active', NOW()),
+(4, 'dev01', 'dev@tanglat.com', SHA2('1234', 256), '0833334444', 'employee', 'active', NOW()),
+(5, 'marketing01', 'marketing@tanglat.com', SHA2('1234', 256), '0845556666', 'employee', 'active', NOW()),
+(6, 'accounting01', 'accounting@tanglat.com', SHA2('1234', 256), '0857778888', 'employee', 'active', NOW()),
+(7, 'admin01', 'admin@tanglat.com', SHA2('1234', 256), '0809990000', 'admin', 'active', NOW());
 
 -- เพิ่มข้อมูลพนักงาน 4 แผนก พร้อมเงินเดือน (Salary)
 INSERT INTO `employees` (`id`, `user_id`, `first_name`, `last_name`, `position`, `department`, `salary`, `hire_date`) VALUES

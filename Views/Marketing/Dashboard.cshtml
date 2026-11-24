@@ -5,20 +5,27 @@
     string labelsJson = ViewBag.AdLabelsJson as string ?? "[]";
     string viewsJson = ViewBag.AdViewsJson as string ?? "[]";
     string clicksJson = ViewBag.AdClicksJson as string ?? "[]";
+    string adStatusJson = ViewBag.AdStatusJson as string ?? "[0,0,0,0]";
+    string planLabelsJson = ViewBag.PlanLabelsJson as string ?? "[]";
+    string planCountsJson = ViewBag.PlanCountsJson as string ?? "[]";
 }
 
+<!-- แถวที่ 1: การ์ดตัวเลข KPI 4 ช่อง (ดึงข้อมูลจริงจาก MySQL) -->
 <div class="row g-4 mb-4">
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-sm-6 col-xl-3">
         <div class="admin-panel h-100 mb-0">
-            <div class="text-secondary small fw-semibold mb-2">โฆษณาที่กำลังแสดงผล</div>
+            <div class="text-secondary small fw-semibold mb-2">โฆษณาที่เปิดใช้งาน</div>
             <div class="d-flex justify-content-between align-items-end">
-                <div class="fs-2 fw-bold text-primary">@ViewBag.ActiveAdsCount</div>
+                <div>
+                    <span class="fs-2 fw-bold text-primary">@ViewBag.ActiveAdsCount</span>
+                    <span class="small text-secondary">/ @ViewBag.TotalAdsCount</span>
+                </div>
                 <span class="badge bg-primary-subtle text-primary p-2 rounded-3"><i class="bi bi-megaphone fs-4"></i></span>
             </div>
         </div>
     </div>
 
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-sm-6 col-xl-3">
         <div class="admin-panel h-100 mb-0">
             <div class="text-secondary small fw-semibold mb-2">จำนวนการมองเห็นรวม</div>
             <div class="d-flex justify-content-between align-items-end">
@@ -28,7 +35,7 @@
         </div>
     </div>
 
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-sm-6 col-xl-3">
         <div class="admin-panel h-100 mb-0">
             <div class="text-secondary small fw-semibold mb-2">จำนวนการคลิกรวม</div>
             <div class="d-flex justify-content-between align-items-end">
@@ -37,27 +44,59 @@
             </div>
         </div>
     </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="admin-panel h-100 mb-0">
+            <div class="text-secondary small fw-semibold mb-2">อัตราการคลิกเฉลี่ย (CTR)</div>
+            <div class="d-flex justify-content-between align-items-end">
+                <div class="fs-2 fw-bold text-danger">@ViewBag.AvgCtr%</div>
+                <span class="badge bg-danger-subtle text-danger p-2 rounded-3"><i class="bi bi-percent fs-4"></i></span>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="admin-panel">
+<!-- แถวที่ 2: กราฟที่ 1 (Views vs Clicks) -->
+<div class="admin-panel mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow text-danger me-2"></i>สถิติยอดมองเห็นและยอดคลิกแต่ละแคมเปญโฆษณา</h6>
+        <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart-fill text-success me-2"></i>สถิติยอดมองเห็นและยอดคลิกแต่ละแคมเปญโฆษณา</h6>
         <div class="d-flex gap-2">
             <a asp-action="Ads" class="btn btn-sm btn-tanglat rounded-3">จัดการป้ายโฆษณา</a>
-            <a asp-action="Promotions" class="btn btn-sm btn-light border rounded-3">แพ็กเกจสมาชิก</a>
+            <a asp-action="Promotions" class="btn btn-sm btn-light border rounded-3">แพ็กเกจสมาชิก (@ViewBag.ActivePromotions)</a>
         </div>
     </div>
 
-    <div style="height: 300px;">
+    <div style="height: 270px;">
         <canvas id="marketingAdsChart"></canvas>
+    </div>
+</div>
+
+<!-- แถวที่ 3: กราฟที่ 2 (สัดส่วนสถานะโฆษณา) และ กราฟที่ 3 (ยอดสมัครแพ็กเกจสมาชิก) -->
+<div class="row g-4">
+    <div class="col-12 col-lg-5">
+        <div class="admin-panel h-100 mb-0">
+            <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill text-primary me-2"></i>สัดส่วนสถานะป้ายโฆษณาทั้งหมด</h6>
+            <div style="height: 250px;">
+                <canvas id="adStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+        <div class="admin-panel h-100 mb-0">
+            <h6 class="fw-bold mb-3"><i class="bi bi-gem text-warning me-2"></i>จำนวนรายการสั่งซื้อแยกตามแพ็กเกจสมาชิกและโฆษณา</h6>
+            <div style="height: 250px;">
+                <canvas id="planOrdersChart"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const ctx = document.getElementById('marketingAdsChart');
-        new Chart(ctx, {
+        // กราฟที่ 1: ยอดมองเห็นและยอดคลิกแต่ละแคมเปญ
+        new Chart(document.getElementById('marketingAdsChart'), {
             type: 'bar',
             data: {
                 labels: @Html.Raw(labelsJson),
@@ -80,6 +119,45 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // กราฟที่ 2: สัดส่วนสถานะป้ายโฆษณา (Active / Paused / Expired / Rejected)
+        new Chart(document.getElementById('adStatusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['กำลังแสดงผล (Active)', 'พักไว้ (Paused)', 'หมดอายุ (Expired)', 'ระงับ (Rejected)'],
+                datasets: [{
+                    data: @Html.Raw(adStatusJson),
+                    backgroundColor: ['#198754', '#f59e0b', '#6c757d', '#dc3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // กราฟที่ 3: จำนวนรายการสั่งซื้อแยกตามแพ็กเกจ (ดึงจาก payments + subscription_plans)
+        new Chart(document.getElementById('planOrdersChart'), {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(planLabelsJson),
+                datasets: [{
+                    label: 'จำนวนรายการสั่งซื้อ (ครั้ง)',
+                    data: @Html.Raw(planCountsJson),
+                    backgroundColor: ['#0d6efd', '#198754', '#0b3d2e', '#6f42c1'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
     </script>

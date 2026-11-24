@@ -662,3 +662,4 @@ C:\Users\sutti\Downloads\Suttipong_9922_L004\obj\Debug\net10.0\compressed\7407ir
 C:\Users\sutti\Downloads\Suttipong_9922_L004\obj\Debug\net10.0\compressed\t1fktjuxak-{0}-jfsiqqwiad-jfsiqqwiad.gz
 C:\Users\sutti\Downloads\Suttipong_9922_L004\obj\Debug\net10.0\compressed\5afsqx2oma-{0}-g5i7ddr8y1-g5i7ddr8y1.gz
 C:\Users\sutti\Downloads\Suttipong_9922_L004\obj\Debug\net10.0\compressed\anbhktrk1x-{0}-2rzvufx2up-2rzvufx2up.gz
+C:\Users\sutti\Downloads\Suttipong_9922_L004\obj\Debug\net10.0\compressed\yw61w5wajw-{0}-5hzsnpj9o5-5hzsnpj9o5.gz

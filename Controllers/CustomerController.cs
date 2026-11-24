@@ -195,7 +195,10 @@ public class CustomerController : Controller
 
                 if (ads.Count > 0)
                 {
-                    ads[0].ViewsCount = (ads[0].ViewsCount ?? 0) + 1;
+                    foreach (var adItem in ads)
+                    {
+                        adItem.ViewsCount = (adItem.ViewsCount ?? 0) + 1;
+                    }
                     _db.SaveChanges();
                 }
             }

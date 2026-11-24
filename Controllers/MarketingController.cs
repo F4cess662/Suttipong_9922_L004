@@ -58,18 +58,46 @@ public class MarketingController : Controller
 
         UpdateExpiredAds();
 
+        // ดึงข้อมูลจริงทั้งหมดจากฐานข้อมูล MySQL
         var ads = (from a in _db.Advertisements.Include(x => x.User) orderby a.CreatedAt descending select a).ToList();
         var plans = (from p in _db.SubscriptionPlans select p).ToList();
+        var payments = (from p in _db.Payments.Include(x => x.SubscriptionPlan) select p).ToList();
 
-        ViewBag.ActiveAdsCount = ads.Count(a => a.Status == "active");
-        ViewBag.TotalViews = ads.Sum(a => a.ViewsCount ?? 0);
-        ViewBag.TotalClicks = ads.Sum(a => a.ClicksCount ?? 0);
+        int activeAds = ads.Count(a => a.Status == "active");
+        int pausedAds = ads.Count(a => a.Status == "paused");
+        int expiredAds = ads.Count(a => a.Status == "expired");
+        int rejectedAds = ads.Count(a => a.Status == "rejected");
+
+        int totalViews = ads.Sum(a => a.ViewsCount ?? 0);
+        int totalClicks = ads.Sum(a => a.ClicksCount ?? 0);
+        double avgCtr = totalViews > 0 ? Math.Round((double)totalClicks / totalViews * 100.0, 2) : 0.0;
+
+        ViewBag.ActiveAdsCount = activeAds;
+        ViewBag.TotalAdsCount = ads.Count;
+        ViewBag.TotalViews = totalViews;
+        ViewBag.TotalClicks = totalClicks;
+        ViewBag.AvgCtr = avgCtr;
         ViewBag.ActivePromotions = plans.Count(p => p.IsActive != false);
 
-        // เตรียมข้อมูลจริงจากฐานข้อมูลสำหรับกราฟ Chart.js
-        ViewBag.AdLabelsJson = JsonSerializer.Serialize(ads.Select(a => a.Title.Length > 20 ? a.Title.Substring(0, 20) + "..." : a.Title).ToList());
+        // กราฟที่ 1: เปรียบเทียบยอดมองเห็น (Views) และยอดคลิก (Clicks) ของแต่ละแคมเปญโฆษณา
+        ViewBag.AdLabelsJson = JsonSerializer.Serialize(ads.Select(a => a.Title.Length > 22 ? a.Title.Substring(0, 22) + "..." : a.Title).ToList());
         ViewBag.AdViewsJson = JsonSerializer.Serialize(ads.Select(a => a.ViewsCount ?? 0).ToList());
         ViewBag.AdClicksJson = JsonSerializer.Serialize(ads.Select(a => a.ClicksCount ?? 0).ToList());
+
+        // กราฟที่ 2 (เพิ่มใหม่): สัดส่วนสถานะป้ายโฆษณาทั้งหมดในระบบ
+        ViewBag.AdStatusJson = JsonSerializer.Serialize(new int[] { activeAds, pausedAds, expiredAds, rejectedAds });
+
+        // กราฟที่ 3 (เพิ่มใหม่): จำนวนผู้สมัครและยอดซื้อแยกตามแพ็กเกจสมาชิก (ดึงจาก subscription_plans + payments)
+        var planLabels = new List<string>();
+        var planCounts = new List<int>();
+        foreach (var pl in plans)
+        {
+            planLabels.Add(pl.Name.Length > 20 ? pl.Name.Substring(0, 20) + "..." : pl.Name);
+            int count = payments.Count(pay => pay.SubscriptionPlanId == pl.Id);
+            planCounts.Add(count);
+        }
+        ViewBag.PlanLabelsJson = JsonSerializer.Serialize(planLabels);
+        ViewBag.PlanCountsJson = JsonSerializer.Serialize(planCounts);
 
         return View(ads);
     }
@@ -104,6 +132,12 @@ public class MarketingController : Controller
             if (ad != null)
             {
                 ad.Status = status;
+                // หากฝ่ายการตลาดกดเปิดแสดงผลโฆษณาที่เลยวันหมดอายุไปแล้ว ให้ต่ออายุให้อัตโนมัติ 15 วัน
+                if (status == "active" && ad.EndDate < DateOnly.FromDateTime(DateTime.Today))
+                {
+                    ad.StartDate = DateOnly.FromDateTime(DateTime.Today);
+                    ad.EndDate = DateOnly.FromDateTime(DateTime.Today.AddDays(15));
+                }
                 ad.UpdatedAt = DateTime.Now;
                 _db.SaveChanges();
                 TempData["MarketingMsg"] = "อัปเดตสถานะโฆษณา #" + id + " เรียบร้อยแล้ว";

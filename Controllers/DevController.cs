@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -21,6 +23,13 @@ public class DevController : Controller
     {
         _db = db;
         _env = env;
+    }
+
+    // ฟังก์ชันเข้ารหัสรหัสผ่านด้วย SHA-256
+    private string HashPassword(string password)
+    {
+        byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
+        return Convert.ToHexString(bytes).ToLower();
     }
 
     // ตรวจสอบสิทธิ์การเข้าถึง: อนุญาตเฉพาะฝ่าย Dev หรือ Admin เท่านั้น
@@ -398,7 +407,7 @@ public class DevController : Controller
         newUser.UserName = data.Username;
         newUser.Email = data.Email;
         newUser.PhoneNumber = data.PhoneNumber;
-        newUser.Password = data.Password;
+        newUser.Password = HashPassword(data.Password);
         newUser.Role = (data.Role == "admin") ? "admin" : (data.Role == "employee" ? "employee" : "customer");
         newUser.Status = data.IsActive ? "active" : "pending";
         newUser.LastActive = DateTime.Now;
@@ -442,8 +451,8 @@ public class DevController : Controller
             Username = user.UserName,
             Email = user.Email,
             PhoneNumber = user.PhoneNumber,
-            Password = user.Password,
-            ConfirmPassword = user.Password,
+            Password = "",
+            ConfirmPassword = "",
             Role = user.Role,
             IsActive = (user.Status == "active"),
             FirstName = user.Employee?.FirstName,
@@ -465,9 +474,9 @@ public class DevController : Controller
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "users";
 
-        if (string.IsNullOrEmpty(data.Password) || data.Password != data.ConfirmPassword)
+        if (!string.IsNullOrEmpty(data.Password) && data.Password != data.ConfirmPassword)
         {
-            ViewBag.Status = "รหัสผ่านไม่ตรงกัน หรือยังไม่ได้กรอกรหัสผ่าน";
+            ViewBag.Status = "รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน";
             return View("~/Views/Account/EditUser.cshtml", data);
         }
 
@@ -487,7 +496,10 @@ public class DevController : Controller
             user.UserName = data.Username!;
             user.Email = data.Email!;
             user.PhoneNumber = data.PhoneNumber;
-            user.Password = data.Password;
+            if (!string.IsNullOrEmpty(data.Password))
+            {
+                user.Password = HashPassword(data.Password);
+            }
             user.Role = (data.Role == "admin") ? "admin" : (data.Role == "employee" ? "employee" : "customer");
             user.Status = data.IsActive ? "active" : "pending";
 

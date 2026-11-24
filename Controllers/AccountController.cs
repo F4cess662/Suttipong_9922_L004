@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +16,13 @@ public class AccountController : Controller
     public AccountController(Csi402dbContext db)
     {
         _db = db;
+    }
+
+    // ฟังก์ชันเข้ารหัสรหัสผ่านด้วย SHA-256 (ผลลัพธ์ตรงกับคำสั่ง SHA2(..., 256) ใน MySQL)
+    private string HashPassword(string password)
+    {
+        byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
+        return Convert.ToHexString(bytes).ToLower();
     }
 
     public IActionResult Lab4()
@@ -40,25 +49,31 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Login(LoginViewModel data, string? email, string? phoneNumber, string? source)
     {
-        // ค้นหาผู้ใช้จากฐานข้อมูล (เหมือนใน HomeController)
+        string hashedPassword = HashPassword(data.Password ?? "");
+
+        // ค้นหาผู้ใช้จากฐานข้อมูลโดยเทียบกับรหัสผ่านที่ Hash ด้วย SHA-256
         var checkUser = (from u in _db.Users.Include(x => x.Employee)
                          where (u.UserName == data.Username || u.Email == data.Username)
-                               && u.Password == data.Password
+                               && (u.Password == hashedPassword || u.Password == data.Password)
                          select u).FirstOrDefault();
 
         if (checkUser != null)
         {
-            // ตรวจสอบว่าบัญชีเปิดใช้งานอยู่หรือไม่
             if (checkUser.Status != "active")
             {
                 ViewBag.Status = "บัญชีนี้ถูกระงับการใช้งานหรือรอการอนุมัติ";
                 return View(data);
             }
 
+            // หากบัญชีเก่ายังเก็บรหัสผ่านแบบไม่ Hash ให้แปลงเป็น SHA-256 บันทึกลง DB อัตโนมัติ
+            if (checkUser.Password != hashedPassword)
+            {
+                checkUser.Password = hashedPassword;
+            }
+
             checkUser.LastActive = DateTime.Now;
             _db.SaveChanges();
 
-            // เก็บข้อมูลลง Session เพื่อใช้ตรวจสอบสิทธิ์ในแต่ละหน้า
             HttpContext.Session.SetInt32("UserId", checkUser.Id);
             HttpContext.Session.SetString("Username", checkUser.UserName);
             HttpContext.Session.SetString("Email", checkUser.Email);
@@ -75,33 +90,17 @@ public class AccountController : Controller
             }
             HttpContext.Session.SetString("Department", dept);
 
-            // แยกหน้าหลังเข้าสู่ระบบตาม Role และแผนก
             if (checkUser.Role == "admin")
             {
                 return RedirectToAction("Dashboard", "Dev");
             }
             else if (checkUser.Role == "employee")
             {
-                if (dept == "Support")
-                {
-                    return RedirectToAction("Index", "Support");
-                }
-                else if (dept == "Dev")
-                {
-                    return RedirectToAction("Dashboard", "Dev");
-                }
-                else if (dept == "Marketing")
-                {
-                    return RedirectToAction("Dashboard", "Marketing");
-                }
-                else if (dept == "Accounting")
-                {
-                    return RedirectToAction("Dashboard", "Accounting");
-                }
-                else
-                {
-                    return RedirectToAction("Dashboard", "Dev");
-                }
+                if (dept == "Support") return RedirectToAction("Index", "Support");
+                else if (dept == "Dev") return RedirectToAction("Dashboard", "Dev");
+                else if (dept == "Marketing") return RedirectToAction("Dashboard", "Marketing");
+                else if (dept == "Accounting") return RedirectToAction("Dashboard", "Accounting");
+                else return RedirectToAction("Dashboard", "Dev");
             }
             else
             {
@@ -115,7 +114,6 @@ public class AccountController : Controller
         }
     }
 
-    // ทางลัดเข้าสู่ระบบแยกตามตำแหน่งสำหรับใช้สาธิตตอนพรีเซนต์
     public IActionResult QuickLogin(string roleType)
     {
         User? user = null;
@@ -187,7 +185,7 @@ public class AccountController : Controller
                     User u = new();
                     u.Email = data.Email;
                     u.UserName = data.Username;
-                    u.Password = data.Password;
+                    u.Password = HashPassword(data.Password); // เข้ารหัสผ่านด้วย SHA-256 ก่อนบันทึก
                     u.PhoneNumber = data.PhoneNumber;
                     u.Role = "customer";
                     u.Status = "active";
@@ -199,7 +197,6 @@ public class AccountController : Controller
                     {
                         source = "Register",
                         username = data.Username,
-                        password = data.Password,
                         email = data.Email,
                         phoneNumber = data.PhoneNumber
                     });
@@ -227,27 +224,13 @@ public class AccountController : Controller
         return RedirectToAction("Login", "Account");
     }
 
-    public IActionResult UserList(string? search)
-    {
-        return RedirectToAction("UserList", "Dev", new { search = search });
-    }
-
-    public IActionResult AddUser()
-    {
-        return RedirectToAction("AddUser", "Dev");
-    }
-
-    public IActionResult EditUser(int id)
-    {
-        return RedirectToAction("EditUser", "Dev", new { id = id });
-    }
+    public IActionResult UserList(string? search) => RedirectToAction("UserList", "Dev", new { search = search });
+    public IActionResult AddUser() => RedirectToAction("AddUser", "Dev");
+    public IActionResult EditUser(int id) => RedirectToAction("EditUser", "Dev", new { id = id });
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult DeleteUser(int id)
-    {
-        return RedirectToAction("DeleteUser", "Dev", new { id = id });
-    }
+    public IActionResult DeleteUser(int id) => RedirectToAction("DeleteUser", "Dev", new { id = id });
 
     public IActionResult Error()
     {

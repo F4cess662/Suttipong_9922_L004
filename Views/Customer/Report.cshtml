@@ -21,11 +21,11 @@
                 </span>
                 <div>
                     <h5 class="fw-bold mb-0">แจ้งปัญหาการใช้งาน</h5>
-                    <span class="text-secondary small">ส่งข้อมูลปัญหาเพื่อให้เจ้าหน้าที่ตรวจสอบและติดต่อกลับ</span>
+                    <span class="text-secondary small">ส่งข้อมูลปัญหาพร้อมภาพประกอบเพื่อให้เจ้าหน้าที่ตรวจสอบ</span>
                 </div>
             </div>
 
-            <form asp-controller="Customer" asp-action="Report" method="post">
+            <form asp-controller="Customer" asp-action="Report" method="post" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">หัวข้อเรื่อง</label>
                     <input type="text" name="subject" class="form-control bg-light border-0 py-2"
@@ -33,7 +33,8 @@
                 </div>
 
                 <div class="row g-3 mb-3">
-                    <div class="col-md-6">
+                    @* 
+                    <div class="col-md-5">
                         <label class="form-label small fw-semibold">ระดับความสำคัญ</label>
                         <select name="priority" class="form-select bg-light border-0 py-2">
                             <option value="low">ทั่วไป</option>
@@ -41,10 +42,10 @@
                             <option value="high">สำคัญ</option>
                             <option value="urgent">เร่งด่วน</option>
                         </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">ลิงก์รูปภาพประกอบ (ถ้ามี)</label>
-                        <input type="url" name="imageUrl" class="form-control bg-light border-0 py-2" placeholder="https://..." />
+                    </div> *@
+                    <div class="col-md-7">
+                        <label class="form-label small fw-semibold"><i class="bi bi-paperclip me-1"></i>อัปโหลดไฟล์ภาพหน้าจอ</label>
+                        <input type="file" name="attachmentFile" accept="image/*" class="form-control bg-light border-0 py-2" />
                     </div>
                 </div>
 
@@ -68,10 +69,16 @@
                 <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-secondary"></i>ประวัติการแจ้งปัญหา</h6>
                 @foreach (var t in myTickets)
                 {
-                    <div class="border-bottom py-2 d-flex justify-content-between align-items-center">
+                    <div class="border-bottom py-3 d-flex justify-content-between align-items-start gap-3">
                         <div>
                             <div class="fw-semibold small">@t.Subject</div>
-                            <div class="small text-secondary">@t.Description</div>
+                            <div class="small text-secondary" style="white-space: pre-line;">@t.Description</div>
+                            @if (!string.IsNullOrEmpty(t.ImageUrl))
+                            {
+                                <a href="@t.ImageUrl" target="_blank" class="small text-success text-decoration-none d-inline-block mt-1">
+                                    <i class="bi bi-image me-1"></i>ดูไฟล์ภาพแนบ
+                                </a>
+                            }
                         </div>
                         <span class="badge rounded-pill @(t.Status == "resolved" ? "bg-success" : t.Status == "in_progress" ? "bg-warning text-dark" : "bg-secondary")">
                             @(t.Status == "resolved" ? "เสร็จสิ้น" : t.Status == "in_progress" ? "กำลังดำเนินการ" : "รอดำเนินการ")

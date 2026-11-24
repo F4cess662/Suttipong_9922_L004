@@ -4,19 +4,27 @@
     var myAds = ViewBag.MyAds as List<Suttipong_9922_L004.Models.Advertisement> ?? new();
 }
 
+@if (TempData["AdError"] != null)
+{
+    <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-3">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["AdError"]
+    </div>
+}
+
 <div class="row g-4">
     <div class="col-12 col-lg-6">
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
             <h6 class="fw-bold mb-3"><i class="bi bi-megaphone text-success me-2"></i>สร้างแคมเปญโฆษณา</h6>
 
-            <form asp-controller="Customer" asp-action="CreateAd" method="post">
+            <form asp-controller="Customer" asp-action="CreateAd" method="post" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label class="form-label fw-semibold small">ชื่อแคมเปญ</label>
                     <input type="text" name="title" class="form-control bg-light border-0 py-2" placeholder="ระบุข้อความโฆษณา" required />
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small">ลิงก์รูปภาพแบนเนอร์</label>
-                    <input type="url" name="imageUrl" class="form-control bg-light border-0 py-2" placeholder="https://..." required />
+                    <label class="form-label fw-semibold small"><i class="bi bi-upload me-1"></i>อัปโหลดไฟล์รูปภาพแบนเนอร์ (.jpg, .png ไม่เกิน 5MB)</label>
+                    <input type="file" name="bannerFile" accept=".jpg,.jpeg,.png,.webp" class="form-control bg-light border-0 py-2 mb-2" />
+                    <input type="url" name="imageUrl" class="form-control bg-light border-0 py-2" placeholder="หรือระบุลิงก์รูปภาพ https://..." />
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold small">ลิงก์ปลายทาง</label>
@@ -51,16 +59,19 @@
                 <div class="d-flex flex-column gap-3">
                     @foreach (var ad in myAds)
                     {
-                        <div class="border rounded-3 p-3 d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="fw-bold small">@ad.Title</div>
-                                <div class="small text-secondary">@ad.StartDate - @ad.EndDate</div>
-                                <div class="small text-secondary mt-1">
-                                    <i class="bi bi-eye me-1"></i>@(ad.ViewsCount ?? 0) • <i class="bi bi-cursor me-1"></i>@(ad.ClicksCount ?? 0)
+                        <div class="border rounded-3 p-3 d-flex justify-content-between align-items-center gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="@ad.ImageUrl" alt="Banner" class="rounded-3 border" style="width:64px;height:48px;object-fit:cover;" />
+                                <div>
+                                    <div class="fw-bold small">@ad.Title</div>
+                                    <div class="small text-secondary">@ad.StartDate - @ad.EndDate</div>
+                                    <div class="small text-secondary mt-1">
+                                        <i class="bi bi-eye me-1"></i>@(ad.ViewsCount ?? 0) • <i class="bi bi-cursor me-1"></i>@(ad.ClicksCount ?? 0)
+                                    </div>
                                 </div>
                             </div>
-                            <span class="badge rounded-pill @(ad.Status == "active" ? "bg-success" : "bg-warning text-dark")">
-                                @(ad.Status == "active" ? "กำลังแสดงผล" : "รออนุมัติ")
+                            <span class="badge rounded-pill @(ad.Status == "active" ? "bg-success" : ad.Status == "expired" ? "bg-secondary" : ad.Status == "rejected" ? "bg-danger" : "bg-warning text-dark")">
+                                @(ad.Status == "active" ? "กำลังแสดงผล" : ad.Status == "expired" ? "หมดอายุแล้ว" : ad.Status == "rejected" ? "ไม่ผ่านการอนุมัติ" : "รออนุมัติ")
                             </span>
                         </div>
                     }

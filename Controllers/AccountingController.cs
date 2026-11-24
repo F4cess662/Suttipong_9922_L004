@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Suttipong_9922_L004.Models;
@@ -16,75 +19,51 @@ public class AccountingController : Controller
         _db = db;
     }
 
-    private List<Employee> GetEmployeesOrDefault()
+    // ตรวจสอบสิทธิ์การเข้าถึง: อนุญาตเฉพาะฝ่าย Accounting เท่านั้น
+    private bool CheckAccountingAccess()
     {
-        try
-        {
-            var list = _db.Employees.Include(e => e.User).ToList();
-            if (list.Any()) return list;
-        }
-        catch { }
-
-        return new List<Employee>
-        {
-            new Employee { Id = 1, UserId = 3, FirstName = "พิมพ์ชนก", LastName = "ใจดี", Position = "Customer Support Officer", Department = "Support", Salary = 26000.00m, HireDate = new DateOnly(2025, 1, 15) },
-            new Employee { Id = 2, UserId = 4, FirstName = "สุทธิพงษ์", LastName = "พัฒนาระบบ", Position = "Full-Stack Developer", Department = "Dev", Salary = 45000.00m, HireDate = new DateOnly(2024, 11, 1) },
-            new Employee { Id = 3, UserId = 5, FirstName = "นภัสสร", LastName = "สื่อสารการตลาด", Position = "Marketing Specialist", Department = "Marketing", Salary = 34000.00m, HireDate = new DateOnly(2025, 2, 10) },
-            new Employee { Id = 4, UserId = 6, FirstName = "ธนดล", LastName = "การคลัง", Position = "Senior Accountant", Department = "Accounting", Salary = 38000.00m, HireDate = new DateOnly(2024, 12, 1) }
-        };
+        var userId = HttpContext.Session.GetInt32("UserId");
+        var role = HttpContext.Session.GetString("Role");
+        var dept = HttpContext.Session.GetString("Department");
+        return userId != null && role == "employee" && dept == "Accounting";
     }
 
-    private List<Payment> GetPaymentsOrDefault()
-    {
-        try
-        {
-            var list = _db.Payments
-                .Include(p => p.User)
-                .Include(p => p.SubscriptionPlan)
-                .Include(p => p.Advertisement)
-                .OrderByDescending(p => p.CreatedAt)
-                .ToList();
-            if (list.Any()) return list;
-        }
-        catch { }
-
-        return new List<Payment>
-        {
-            new Payment { Id = 1, UserId = 2, SubscriptionPlanId = 1, Amount = 99.00m, PaymentMethod = "promptpay", PaymentStatus = "completed", TransactionRef = "TXN-20261101-001", PaidAt = DateTime.Now.AddDays(-5), User = new User { UserName = "vip_user", Email = "vip@tanglat.com" }, SubscriptionPlan = new SubscriptionPlan { Name = "Tang-Lat VIP Monthly" } },
-            new Payment { Id = 2, UserId = 2, AdvertisementId = 1, Amount = 499.00m, PaymentMethod = "promptpay", PaymentStatus = "completed", TransactionRef = "TXN-20261101-002", PaidAt = DateTime.Now.AddDays(-4), User = new User { UserName = "vip_user", Email = "vip@tanglat.com" }, Advertisement = new Advertisement { Title = "Chao Phraya River Cafe" } },
-            new Payment { Id = 3, UserId = 1, SubscriptionPlanId = 1, Amount = 99.00m, PaymentMethod = "promptpay", PaymentStatus = "pending", TransactionRef = "TXN-20261110-003", PaidAt = DateTime.Now.AddHours(-2), User = new User { UserName = "customer01", Email = "customer@tanglat.com" }, SubscriptionPlan = new SubscriptionPlan { Name = "Tang-Lat VIP Monthly" } },
-            new Payment { Id = 4, UserId = 1, AdvertisementId = 3, Amount = 499.00m, PaymentMethod = "bank_transfer", PaymentStatus = "pending", TransactionRef = "TXN-20261110-004", PaidAt = DateTime.Now.AddHours(-1), User = new User { UserName = "customer01", Email = "customer@tanglat.com" }, Advertisement = new Advertisement { Title = "Siam Street Food Festival 2026" } }
-        };
-    }
-
-    // Wireframe หน้า 23-24: แดชบอร์ดสรุปยอดการเงิน (3 การ์ด KPI ด้านบน + กราฟรายรับ-รายจ่าย + สรุปรายการ)
     public IActionResult Dashboard()
     {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Accounting";
         ViewData["ActiveMenu"] = "dashboard";
 
-        var payments = GetPaymentsOrDefault();
-        var employees = GetEmployeesOrDefault();
+        var payments = (from p in _db.Payments.Include(x => x.User).Include(x => x.SubscriptionPlan).Include(x => x.Advertisement)
+                        orderby p.CreatedAt descending
+                        select p).ToList();
+        var employees = (from e in _db.Employees select e).ToList();
 
         decimal totalRevenue = payments.Where(p => p.PaymentStatus == "completed").Sum(p => p.Amount);
         decimal pendingRevenue = payments.Where(p => p.PaymentStatus == "pending").Sum(p => p.Amount);
         decimal totalPayroll = employees.Sum(e => e.Salary ?? 25000m);
 
+        decimal vipRev = payments.Where(p => p.PaymentStatus == "completed" && p.SubscriptionPlanId != null && p.AdvertisementId == null).Sum(p => p.Amount);
+        decimal adsRev = payments.Where(p => p.PaymentStatus == "completed" && p.AdvertisementId != null).Sum(p => p.Amount);
+
         ViewBag.TotalRevenue = totalRevenue;
         ViewBag.PendingRevenue = pendingRevenue;
         ViewBag.TotalPayroll = totalPayroll;
         ViewBag.PendingCount = payments.Count(p => p.PaymentStatus == "pending");
+        ViewBag.FinanceChartJson = JsonSerializer.Serialize(new decimal[] { vipRev, adsRev, pendingRevenue });
 
         return View(payments);
     }
 
-    // Wireframe หน้า 25: จัดการเงินเดือนพนักงาน (Payroll Management พร้อมคอลัมน์ Salary)
     public IActionResult Payroll(string? search, string? department)
     {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Accounting";
         ViewData["ActiveMenu"] = "payroll";
 
-        var employees = GetEmployeesOrDefault();
+        var employees = (from e in _db.Employees.Include(x => x.User) select e).ToList();
         if (!string.IsNullOrEmpty(search))
         {
             employees = employees.Where(e =>
@@ -107,27 +86,96 @@ public class AccountingController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult UpdateSalary(int id, decimal salary)
     {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
         try
         {
-            var emp = _db.Employees.FirstOrDefault(e => e.Id == id);
+            var emp = (from e in _db.Employees where e.Id == id select e).FirstOrDefault();
             if (emp != null)
             {
                 emp.Salary = salary;
                 _db.SaveChanges();
+                TempData["PayrollMsg"] = "อัปเดตฐานเงินเดือนพนักงานรหัส #" + id + " เป็น " + salary.ToString("N2") + " บาท เรียบร้อยแล้ว";
             }
         }
         catch { }
-        TempData["PayrollMsg"] = $"อัปเดตฐานเงินเดือนพนักงานรหัส #{id} เป็น {salary:N2} บาท และบันทึกงวดจ่ายเงินเดือนสำเร็จ!";
         return RedirectToAction("Payroll");
     }
 
-    // Wireframe หน้า 26: ตรวจสอบและยืนยันการชำระเงินของลูกค้า (ปุ่มอนุมัติ / ปฏิเสธ)
+    [HttpGet]
+    public IActionResult Payslip(int id = 1)
+    {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
+        var emp = (from e in _db.Employees where e.Id == id select e).FirstOrDefault();
+        if (emp == null) return RedirectToAction("Payroll");
+
+        return View(emp);
+    }
+
+    [HttpGet]
+    public IActionResult ExportPayrollCsv()
+    {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
+        var employees = (from e in _db.Employees select e).ToList();
+        var sb = new StringBuilder();
+        sb.AppendLine("รหัสพนักงาน,ชื่อ-นามสกุล,ตำแหน่ง,แผนก,วันที่เริ่มงาน,เงินเดือน (บาท),หักประกันสังคม (บาท),รับสุทธิ (บาท)");
+
+        foreach (var e in employees)
+        {
+            decimal salary = e.Salary ?? 25000m;
+            decimal sso = Math.Min(750m, Math.Round(salary * 0.05m, 2));
+            decimal net = salary - sso;
+            sb.AppendLine($"EMP-{e.Id:D3},\"{e.FirstName} {e.LastName}\",\"{e.Position}\",\"{e.Department}\",{e.HireDate:yyyy-MM-dd},{salary:F2},{sso:F2},{net:F2}");
+        }
+
+        byte[] preamble = Encoding.UTF8.GetPreamble();
+        byte[] body = Encoding.UTF8.GetBytes(sb.ToString());
+        byte[] content = preamble.Concat(body).ToArray();
+
+        return File(content, "text/csv; charset=utf-8", "TangLat_Payroll_" + DateTime.Now.ToString("yyyyMMdd") + ".csv");
+    }
+
+    [HttpGet]
+    public IActionResult ExportPaymentsCsv()
+    {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
+        var payments = (from p in _db.Payments.Include(x => x.User).Include(x => x.SubscriptionPlan).Include(x => x.Advertisement)
+                        orderby p.CreatedAt descending
+                        select p).ToList();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("รหัสรายการ,ผู้ชำระเงิน,ประเภทบริการ,รหัสอ้างอิง,ช่องทางชำระเงิน,จำนวนเงิน (บาท),สถานะ,วันที่ทำรายการ");
+
+        foreach (var p in payments)
+        {
+            string serviceName = p.SubscriptionPlan != null
+                ? "VIP: " + p.SubscriptionPlan.Name
+                : (p.Advertisement != null ? "Ads: " + p.Advertisement.Title : "บริการทั่วไป");
+            string cleanRef = (p.TransactionRef ?? "-").Split('|')[0].Trim();
+            sb.AppendLine($"PAY-{p.Id:D4},\"{p.User?.UserName ?? "customer"}\",\"{serviceName}\",\"{cleanRef}\",{p.PaymentMethod},{p.Amount:F2},{p.PaymentStatus},{p.PaidAt:yyyy-MM-dd HH:mm}");
+        }
+
+        byte[] preamble = Encoding.UTF8.GetPreamble();
+        byte[] body = Encoding.UTF8.GetBytes(sb.ToString());
+        byte[] content = preamble.Concat(body).ToArray();
+
+        return File(content, "text/csv; charset=utf-8", "TangLat_Financial_Report_" + DateTime.Now.ToString("yyyyMMdd") + ".csv");
+    }
+
     public IActionResult Payments(string? search, string? status)
     {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Accounting";
         ViewData["ActiveMenu"] = "payments";
 
-        var payments = GetPaymentsOrDefault();
+        var payments = (from p in _db.Payments.Include(x => x.User).Include(x => x.SubscriptionPlan).Include(x => x.Advertisement)
+                        orderby p.CreatedAt descending
+                        select p).ToList();
+
         if (!string.IsNullOrEmpty(search))
         {
             payments = payments.Where(p =>
@@ -149,30 +197,113 @@ public class AccountingController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult VerifyPayment(int id, string newStatus)
     {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
+        string autoActionDetail = "";
         try
         {
-            var payment = _db.Payments.FirstOrDefault(p => p.Id == id);
+            var payment = (from p in _db.Payments.Include(x => x.SubscriptionPlan)
+                           where p.Id == id
+                           select p).FirstOrDefault();
+
             if (payment != null)
             {
                 payment.PaymentStatus = newStatus;
+                payment.PaidAt = DateTime.Now;
                 payment.UpdatedAt = DateTime.Now;
-                if (newStatus == "completed" && payment.AdvertisementId != null)
+
+                if (newStatus == "completed")
                 {
-                    var ad = _db.Advertisements.FirstOrDefault(a => a.Id == payment.AdvertisementId);
-                    if (ad != null) ad.Status = "active";
+                    if (payment.AdvertisementId != null)
+                    {
+                        var ad = (from a in _db.Advertisements where a.Id == payment.AdvertisementId select a).FirstOrDefault();
+                        if (ad != null)
+                        {
+                            ad.Status = "active";
+                            if (ad.EndDate < DateOnly.FromDateTime(DateTime.Today))
+                            {
+                                ad.StartDate = DateOnly.FromDateTime(DateTime.Today);
+                                ad.EndDate = DateOnly.FromDateTime(DateTime.Today.AddDays(15));
+                            }
+                            ad.UpdatedAt = DateTime.Now;
+                            autoActionDetail = " และเปิดแสดงผลป้ายโฆษณา '" + ad.Title + "' อัตโนมัติแล้ว";
+                        }
+                    }
+                    else if (payment.SubscriptionPlanId != null)
+                    {
+                        int days = payment.SubscriptionPlan?.DurationDays ?? 30;
+                        autoActionDetail = " และเปิดสิทธิ์สมาชิก VIP นาน " + days + " วันอัตโนมัติแล้ว";
+                    }
                 }
+                else if (newStatus == "failed" && payment.AdvertisementId != null)
+                {
+                    var ad = (from a in _db.Advertisements where a.Id == payment.AdvertisementId select a).FirstOrDefault();
+                    if (ad != null) ad.Status = "rejected";
+                }
+
                 _db.SaveChanges();
             }
         }
         catch { }
 
-        TempData["PaymentVerifyMsg"] = $"อัปเดตสถานะการชำระเงินรายการ #{id} เป็น '{newStatus}' เรียบร้อยแล้ว!";
+        TempData["PaymentVerifyMsg"] = "อัปเดตสถานะการชำระเงินรายการ #" + id + " เป็น '" + newStatus + "'" + autoActionDetail;
         return RedirectToAction("Payments");
     }
 
-    // Wireframe หน้า 27: ตั้งค่าบัญชีพนักงานฝ่ายบัญชี
+    public IActionResult Issues(string? search)
+    {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
+        ViewData["Department"] = "Accounting";
+        ViewData["ActiveMenu"] = "issues";
+
+        var tickets = (from t in _db.SupportTickets.Include(x => x.Customer).Include(x => x.Employee)
+                       where (t.Employee != null && t.Employee.Department == "Accounting") ||
+                             t.Subject.Contains("[ส่งต่อแผนก Accounting]")
+                       orderby t.CreatedAt descending
+                       select t).ToList();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            tickets = tickets.Where(t =>
+                t.Subject.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                t.Description.Contains(search, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+
+        ViewBag.Search = search;
+        return View(tickets);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ResolveIssue(int id, string? resolutionNote)
+    {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
+        try
+        {
+            var t = (from x in _db.SupportTickets where x.Id == id select x).FirstOrDefault();
+            if (t != null)
+            {
+                if (!string.IsNullOrWhiteSpace(resolutionNote))
+                {
+                    t.Description += "\n\n[ฝ่าย Accounting ดำเนินการแล้ว - " + DateTime.Now.ToString("dd/MM/yyyy HH:mm") + "]: " + resolutionNote;
+                }
+                t.Status = "resolved";
+                t.UpdatedAt = DateTime.Now;
+                _db.SaveChanges();
+                TempData["AccountingIssueMsg"] = "ดำเนินการแก้ไขคำร้องฝ่ายบัญชี #" + id + " เสร็จสิ้นแล้ว";
+            }
+        }
+        catch { }
+        return RedirectToAction("Issues");
+    }
+
     public IActionResult Settings()
     {
+        if (!CheckAccountingAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Accounting";
         ViewData["ActiveMenu"] = "settings";
         return View("~/Views/Dev/Settings.cshtml");

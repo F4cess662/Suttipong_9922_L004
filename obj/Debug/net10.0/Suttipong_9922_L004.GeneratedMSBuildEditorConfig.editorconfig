@@ -35,12 +35,20 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudGluZ1xEYXNoYm9hcmQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/sutti/Downloads/Suttipong_9922_L004/Views/Accounting/Issues.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudGluZ1xJc3N1ZXMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/sutti/Downloads/Suttipong_9922_L004/Views/Accounting/Payments.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudGluZ1xQYXltZW50cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/sutti/Downloads/Suttipong_9922_L004/Views/Accounting/Payroll.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudGluZ1xQYXlyb2xsLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/sutti/Downloads/Suttipong_9922_L004/Views/Accounting/Payslip.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudGluZ1xQYXlzbGlwLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/sutti/Downloads/Suttipong_9922_L004/Views/Account/AddUser.cshtml]
@@ -101,6 +109,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/sutti/Downloads/Suttipong_9922_L004/Views/Dev/Dashboard.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGV2XERhc2hib2FyZC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/sutti/Downloads/Suttipong_9922_L004/Views/Dev/EditPlace.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGV2XEVkaXRQbGFjZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/sutti/Downloads/Suttipong_9922_L004/Views/Dev/Issues.cshtml]

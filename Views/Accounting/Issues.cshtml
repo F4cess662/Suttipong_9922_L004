@@ -1,0 +1,71 @@
+@model IEnumerable<Suttipong_9922_L004.Models.SupportTicket>
+@{
+    ViewData["Title"] = "รายการแจ้งปัญหา (ฝ่ายบัญชีและการเงิน)";
+    Layout = "_AdminLayout";
+}
+
+@if (TempData["AccountingIssueMsg"] != null)
+{
+    <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["AccountingIssueMsg"]
+    </div>
+}
+
+<div class="admin-panel">
+    <form asp-controller="Accounting" asp-action="Issues" method="get" class="mb-4" style="max-width:440px;">
+        <div class="input-group">
+            <span class="input-group-text bg-light border-0"><i class="bi bi-search text-secondary"></i></span>
+            <input type="text" name="search" value="@ViewBag.Search" class="form-control bg-light border-0" placeholder="ค้นหารายการแจ้งปัญหาการชำระเงิน" />
+            <button type="submit" class="btn btn-tanglat px-4">ค้นหา</button>
+        </div>
+    </form>
+
+    <div class="d-flex flex-column gap-3">
+        @foreach (var item in Model)
+        {
+            <div class="border rounded-4 p-3 bg-white">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="rounded-3 bg-light border text-success d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;">
+                            <i class="bi bi-receipt-cutoff fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">
+                                @item.Subject
+                                @if (item.Priority == "urgent" || item.Priority == "high")
+                                {
+                                    <span class="badge bg-danger-subtle text-danger ms-1 small">@item.Priority</span>
+                                }
+                            </div>
+                            <div class="small text-secondary" style="white-space: pre-line;">@item.Description</div>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-person me-1"></i>ผู้แจ้ง: @(item.Customer?.UserName ?? "customer01") (@(item.Customer?.Email ?? "customer@tanglat.com"))
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge rounded-pill @(item.Status == "resolved" ? "bg-success" : "bg-warning text-dark")">
+                            @(item.Status == "resolved" ? "เสร็จสิ้น" : "รอดำเนินการ")
+                        </span>
+                    </div>
+                </div>
+
+                @if (item.Status != "resolved")
+                {
+                    <form asp-controller="Accounting" asp-action="ResolveIssue" method="post" class="row g-2 align-items-center mt-3 pt-3 border-top">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <div class="col-md-9">
+                            <input type="text" name="resolutionNote" class="form-control form-control-sm bg-light border-0 py-2" placeholder="ระบุผลการตรวจสอบยอดเงิน/การแก้ไขของฝ่ายบัญชี..." />
+                        </div>
+                        <div class="col-md-3 d-grid">
+                            <button type="submit" class="btn btn-sm btn-tanglat rounded-3 py-2">
+                                <i class="bi bi-check2-circle me-1"></i>ยืนยันแก้ไขเสร็จสิ้น
+                            </button>
+                        </div>
+                    </form>
+                }
+            </div>
+        }
+    </div>
+</div>

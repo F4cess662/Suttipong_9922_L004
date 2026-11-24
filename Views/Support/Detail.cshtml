@@ -4,12 +4,19 @@
     Layout = "_AdminLayout";
     string customerEmail = Model.Customer?.Email ?? "customer@tanglat.com";
     string customerName = Model.Customer?.UserName ?? "customer01";
+    string? lastEmailUrl = TempData["LastEmailUrl"] as string;
 }
 
 @if (TempData["SupportMsg"] != null)
 {
-    <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3">
-        <i class="bi bi-check-circle-fill me-2"></i>@TempData["SupportMsg"]
+    <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div><i class="bi bi-check-circle-fill me-2"></i>@TempData["SupportMsg"]</div>
+        @if (!string.IsNullOrEmpty(lastEmailUrl))
+        {
+            <a href="@lastEmailUrl" target="_blank" class="btn btn-sm btn-light border rounded-3 fw-semibold">
+                <i class="bi bi-envelope-open me-1"></i>เปิดดูสำเนาอีเมลที่ส่งออก
+            </a>
+        }
     </div>
 }
 
@@ -44,7 +51,9 @@
             <div class="border rounded-4 p-4 bg-light text-center">
                 @if (!string.IsNullOrEmpty(Model.ImageUrl))
                 {
-                    <img src="@Model.ImageUrl" alt="Attachment" class="img-fluid rounded-3" style="max-height:220px;" />
+                    <a href="@Model.ImageUrl" target="_blank">
+                        <img src="@Model.ImageUrl" alt="Attachment" class="img-fluid rounded-3" style="max-height:220px;" />
+                    </a>
                 }
                 else
                 {
@@ -80,7 +89,7 @@
         </div>
 
         <div class="admin-panel mb-0">
-            <h6 class="fw-bold mb-3"><i class="bi bi-envelope-at text-success me-2"></i>ตอบกลับลูกค้าทางอีเมล</h6>
+            <h6 class="fw-bold mb-3"><i class="bi bi-envelope-at text-success me-2"></i>ตอบกลับลูกค้าทางอีเมล (SMTP Notification)</h6>
             <form asp-controller="Support" asp-action="ReplyEmail" method="post">
                 <input type="hidden" name="id" value="@Model.Id" />
                 <div class="row g-2 mb-2">

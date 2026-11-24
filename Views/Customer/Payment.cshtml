@@ -16,8 +16,8 @@
             <h5 class="fw-bold mb-1">@itemTitle</h5>
             <div class="fs-3 fw-bold text-success mb-3">@amount.ToString("N2") บาท</div>
 
-            <div class="p-3 border rounded-4 bg-light d-inline-block mx-auto mb-3" style="width: 220px; height: 220px;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=TangLatPromptPay-@amount"
+            <div class="p-3 border rounded-4 bg-light d-inline-block mx-auto mb-3" style="width: 210px; height: 210px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=TangLatPromptPay-@amount"
                      alt="PromptPay QR" class="img-fluid rounded"
                      onerror="this.style.display='none'; document.getElementById('qrFallback').style.display='flex';" />
                 <div id="qrFallback" style="display:none; height:100%;" class="flex-column align-items-center justify-content-center text-dark">
@@ -25,7 +25,7 @@
                 </div>
             </div>
 
-            <form asp-controller="Customer" asp-action="ConfirmPayment" method="post" class="text-start">
+            <form asp-controller="Customer" asp-action="ConfirmPayment" method="post" enctype="multipart/form-data" class="text-start">
                 <input type="hidden" name="planId" value="@planId" />
                 <input type="hidden" name="adId" value="@adId" />
                 <input type="hidden" name="amount" value="@amount" />
@@ -44,6 +44,11 @@
                         <input type="text" name="transactionRef" class="form-control form-control-sm bg-light border-0 py-2"
                                value="TXN-@DateTime.Now.ToString("MMddHHmm")" required />
                     </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold"><i class="bi bi-receipt me-1"></i>แนบหลักฐานสลิปโอนเงิน</label>
+                    <input type="file" name="slipFile" accept="image/*" class="form-control form-control-sm bg-light border-0 py-2" />
                 </div>
 
                 <div class="d-grid gap-2">

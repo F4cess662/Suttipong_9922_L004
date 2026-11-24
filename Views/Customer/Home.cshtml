@@ -4,6 +4,7 @@
     Layout = "CustomerLayout";
     var ads = ViewBag.Ads as List<Suttipong_9922_L004.Models.Advertisement> ?? new();
     bool isVip = ViewBag.IsVip as bool? ?? false;
+    DateTime? vipExpire = ViewBag.VipExpire as DateTime?;
     string currentCat = ViewBag.Category as string ?? "all";
 }
 
@@ -30,7 +31,7 @@
                 <span class="badge bg-white text-dark mb-2"><i class="bi bi-megaphone me-1"></i>ผู้สนับสนุน</span>
                 <h6 class="fw-bold mb-2">@ad.Title</h6>
                 <div class="d-flex gap-2">
-                    <a href="@ad.RedirectUrl" target="_blank" class="btn btn-sm btn-light fw-semibold px-3 rounded-3">ดูรายละเอียด</a>
+                    <a asp-controller="Customer" asp-action="ClickAd" asp-route-id="@ad.Id" target="_blank" class="btn btn-sm btn-light fw-semibold px-3 rounded-3">ดูรายละเอียด</a>
                     <a asp-controller="Customer" asp-action="Membership" class="btn btn-sm btn-outline-light px-3 rounded-3"><i class="bi bi-slash-circle me-1"></i>ปิดโฆษณา</a>
                 </div>
             </div>
@@ -38,6 +39,16 @@
                 <img src="@ad.ImageUrl" alt="Sponsored" style="height: 112px; width: 100%; object-fit: cover;" />
             </div>
         </div>
+    </div>
+}
+else if (isVip)
+{
+    <div class="alert alert-success border-0 rounded-4 py-2 px-3 d-flex align-items-center justify-content-between mb-3 shadow-sm">
+        <div class="small"><i class="bi bi-gem me-2"></i><strong>สมาชิก VIP</strong> — ปิดการแสดงผลโฆษณาและเลือกจุดแวะพักได้ไม่จำกัด</div>
+        @if (vipExpire != null)
+        {
+            <span class="badge bg-white text-success border"><i class="bi bi-calendar-check me-1"></i>ถึง @vipExpire.Value.ToString("dd/MM/yyyy")</span>
+        }
     </div>
 }
 

@@ -2,17 +2,20 @@
 @{
     var pageTitle = ViewData["Title"] as string ?? "แดชบอร์ด";
     var activeMenu = ViewData["ActiveMenu"] as string ?? "dashboard";
-    var roleDept = ViewData["Department"] as string ?? Context.Session.GetString("Department") ?? "Dev";
+    var roleDept = Context.Session.GetString("Department") ?? ViewData["Department"] as string ?? "Dev";
     var username = Context.Session.GetString("Username") ?? roleDept;
     var adminInitials = username.Length >= 2 ? username.Substring(0, 2).ToUpper() : "TL";
-    var settingsController = roleDept == "Marketing" ? "Marketing" : roleDept == "Accounting" ? "Accounting" : roleDept == "Support" ? "Support" : "Dev";
+    var settingsController = roleDept.Equals("Marketing", StringComparison.OrdinalIgnoreCase) ? "Marketing"
+                           : roleDept.Equals("Accounting", StringComparison.OrdinalIgnoreCase) ? "Accounting"
+                           : roleDept.Equals("Support", StringComparison.OrdinalIgnoreCase) ? "Support"
+                           : "Dev";
 }
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@pageTitle - ทางลัด</title>
+    <title>@pageTitle - ทางลัด (@roleDept)</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/admin-layout.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css" />
@@ -26,7 +29,7 @@
                 <span class="admin-brand-icon"><i class="ti ti-route" aria-hidden="true"></i></span>
                 <div class="admin-brand-text">
                     <div>ทางลัด</div>
-                    <small class="text-secondary fw-normal" style="font-size: 12px;">@roleDept Portal</small>
+                    <small class="text-secondary fw-normal" style="font-size: 12px;">ฝ่าย: @roleDept</small>
                 </div>
             </div>
 
@@ -47,7 +50,7 @@
                     </a>
                     <a class="admin-nav-item @(activeMenu == "issues" ? "active" : "")" asp-controller="Marketing" asp-action="Issues">
                         <i class="ti ti-inbox"></i>
-                        <span>คำร้องการตลาด</span>
+                        <span>รายการแจ้งปัญหา</span>
                     </a>
                 }
                 else if (roleDept.Equals("Accounting", StringComparison.OrdinalIgnoreCase))
@@ -63,6 +66,10 @@
                     <a class="admin-nav-item @(activeMenu == "payments" ? "active" : "")" asp-controller="Accounting" asp-action="Payments">
                         <i class="ti ti-receipt-2"></i>
                         <span>ตรวจสอบการชำระเงิน</span>
+                    </a>
+                    <a class="admin-nav-item @(activeMenu == "issues" ? "active" : "")" asp-controller="Accounting" asp-action="Issues">
+                        <i class="ti ti-alert-triangle"></i>
+                        <span>รายการแจ้งปัญหา</span>
                     </a>
                 }
                 else if (roleDept.Equals("Support", StringComparison.OrdinalIgnoreCase))
@@ -114,21 +121,9 @@
             <header class="admin-topbar">
                 <h1 class="admin-topbar-title">@pageTitle</h1>
                 <div class="d-flex align-items-center gap-3">
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 px-3 py-1 rounded-pill" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-grid-1x2 text-secondary"></i>
-                            <span>@roleDept</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 small">
-                            <li><h6 class="dropdown-header">สลับฝ่ายงาน</h6></li>
-                            <li><a class="dropdown-item" asp-controller="Support" asp-action="Index"><i class="bi bi-headset me-2"></i>ฝ่ายซัพพอร์ต (Support)</a></li>
-                            <li><a class="dropdown-item" asp-controller="Dev" asp-action="Dashboard"><i class="bi bi-code-slash me-2"></i>ฝ่ายพัฒนาระบบ (Dev)</a></li>
-                            <li><a class="dropdown-item" asp-controller="Marketing" asp-action="Dashboard"><i class="bi bi-megaphone me-2"></i>ฝ่ายการตลาด (Marketing)</a></li>
-                            <li><a class="dropdown-item" asp-controller="Accounting" asp-action="Dashboard"><i class="bi bi-calculator me-2"></i>ฝ่ายบัญชี (Accounting)</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" asp-controller="Customer" asp-action="Home"><i class="bi bi-compass me-2"></i>หน้าแอปพลิเคชัน</a></li>
-                        </ul>
-                    </div>
+                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fw-semibold">
+                        <i class="bi bi-shield-lock text-success me-1"></i>สิทธิ์การใช้งาน: ฝ่าย @roleDept
+                    </span>
                     <a asp-controller="@settingsController" asp-action="Settings" class="admin-avatar" title="@username">@adminInitials</a>
                 </div>
             </header>

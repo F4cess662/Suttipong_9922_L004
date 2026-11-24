@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Suttipong_9922_L004.Models;
@@ -16,64 +18,72 @@ public class MarketingController : Controller
         _db = db;
     }
 
-    private List<Advertisement> GetAdsOrDefault()
+    // ตรวจสอบสิทธิ์การเข้าถึง: อนุญาตเฉพาะฝ่าย Marketing เท่านั้น
+    private bool CheckMarketingAccess()
+    {
+        var userId = HttpContext.Session.GetInt32("UserId");
+        var role = HttpContext.Session.GetString("Role");
+        var dept = HttpContext.Session.GetString("Department");
+        return userId != null && role == "employee" && dept == "Marketing";
+    }
+
+    private void UpdateExpiredAds()
     {
         try
         {
-            var list = _db.Advertisements.Include(a => a.User).OrderByDescending(a => a.CreatedAt).ToList();
-            if (list.Any()) return list;
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var expiredList = (from a in _db.Advertisements
+                               where a.Status == "active" && a.EndDate < today
+                               select a).ToList();
+
+            if (expiredList.Count > 0)
+            {
+                foreach (var item in expiredList)
+                {
+                    item.Status = "expired";
+                    item.UpdatedAt = DateTime.Now;
+                }
+                _db.SaveChanges();
+            }
         }
         catch { }
-
-        return new List<Advertisement>
-        {
-            new Advertisement { Id = 1, UserId = 2, Title = "Chao Phraya River Cafe - ลด 20% สำหรับผู้ใช้แอปทางลัด", ImageUrl = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80", RedirectUrl = "https://example.com/cafe-promo", StartDate = new DateOnly(2026, 11, 1), EndDate = new DateOnly(2026, 12, 31), Status = "active", ViewsCount = 1240, ClicksCount = 185 },
-            new Advertisement { Id = 2, UserId = 1, Title = "ทัวร์เรือด่วนเจ้าพระยา ชมวิววัดอรุณยามเย็น ราคาพิเศษ", ImageUrl = "https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=800&q=80", RedirectUrl = "https://example.com/boat-tour", StartDate = new DateOnly(2026, 11, 5), EndDate = new DateOnly(2026, 11, 30), Status = "active", ViewsCount = 890, ClicksCount = 92 },
-            new Advertisement { Id = 3, UserId = 1, Title = "Siam Street Food Festival 2026", ImageUrl = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80", RedirectUrl = "https://example.com/food-fest", StartDate = new DateOnly(2026, 11, 10), EndDate = new DateOnly(2026, 11, 25), Status = "paused", ViewsCount = 310, ClicksCount = 24 }
-        };
     }
 
-    private List<SubscriptionPlan> GetPlansOrDefault()
-    {
-        try
-        {
-            var list = _db.SubscriptionPlans.ToList();
-            if (list.Any()) return list;
-        }
-        catch { }
-
-        return new List<SubscriptionPlan>
-        {
-            new SubscriptionPlan { Id = 1, Name = "Tang-Lat VIP Monthly (รายเดือน)", Description = "ปิดโฆษณาทั้งหมด + จัดรูทปักหมุดสถานที่ได้ไม่จำกัด นาน 30 วัน", Price = 99.00m, DurationDays = 30, IsActive = true },
-            new SubscriptionPlan { Id = 2, Name = "Tang-Lat VIP Yearly (รายปีสุดคุ้ม)", Description = "ปิดโฆษณาทั้งหมด + จัดรูทไม่จำกัด นาน 365 วัน ประหยัดกว่า 30%", Price = 799.00m, DurationDays = 365, IsActive = true },
-            new SubscriptionPlan { Id = 3, Name = "แพ็กเกจลงป้ายโฆษณา (Ad Banner 15 วัน)", Description = "โปรโมทร้านค้าบนหน้าแผนที่หลัก นาน 15 วัน", Price = 499.00m, DurationDays = 15, IsActive = true }
-        };
-    }
-
-    // Wireframe หน้า 18: แดชบอร์ดการตลาด (3 การ์ด KPI ด้านบน + 1 กราฟใหญ่ด้านล่าง)
     public IActionResult Dashboard()
     {
+        if (!CheckMarketingAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Marketing";
         ViewData["ActiveMenu"] = "dashboard";
 
-        var ads = GetAdsOrDefault();
-        var plans = GetPlansOrDefault();
+        UpdateExpiredAds();
+
+        var ads = (from a in _db.Advertisements.Include(x => x.User) orderby a.CreatedAt descending select a).ToList();
+        var plans = (from p in _db.SubscriptionPlans select p).ToList();
 
         ViewBag.ActiveAdsCount = ads.Count(a => a.Status == "active");
         ViewBag.TotalViews = ads.Sum(a => a.ViewsCount ?? 0);
         ViewBag.TotalClicks = ads.Sum(a => a.ClicksCount ?? 0);
         ViewBag.ActivePromotions = plans.Count(p => p.IsActive != false);
 
+        // เตรียมข้อมูลจริงจากฐานข้อมูลสำหรับกราฟ Chart.js
+        ViewBag.AdLabelsJson = JsonSerializer.Serialize(ads.Select(a => a.Title.Length > 20 ? a.Title.Substring(0, 20) + "..." : a.Title).ToList());
+        ViewBag.AdViewsJson = JsonSerializer.Serialize(ads.Select(a => a.ViewsCount ?? 0).ToList());
+        ViewBag.AdClicksJson = JsonSerializer.Serialize(ads.Select(a => a.ClicksCount ?? 0).ToList());
+
         return View(ads);
     }
 
-    // Wireframe หน้า 19: จัดการป้ายโฆษณาที่ลูกค้าสมัครเข้ามา (อนุมัติ / พัก / ปฏิเสธ)
     public IActionResult Ads(string? search)
     {
+        if (!CheckMarketingAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Marketing";
         ViewData["ActiveMenu"] = "ads";
 
-        var ads = GetAdsOrDefault();
+        UpdateExpiredAds();
+
+        var ads = (from a in _db.Advertisements.Include(x => x.User) orderby a.CreatedAt descending select a).ToList();
         if (!string.IsNullOrEmpty(search))
         {
             ads = ads.Where(a => a.Title.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -86,28 +96,31 @@ public class MarketingController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult ToggleAdStatus(int id, string status)
     {
+        if (!CheckMarketingAccess()) return RedirectToAction("Login", "Account");
+
         try
         {
-            var ad = _db.Advertisements.FirstOrDefault(a => a.Id == id);
+            var ad = (from a in _db.Advertisements where a.Id == id select a).FirstOrDefault();
             if (ad != null)
             {
                 ad.Status = status;
                 ad.UpdatedAt = DateTime.Now;
                 _db.SaveChanges();
+                TempData["MarketingMsg"] = "อัปเดตสถานะโฆษณา #" + id + " เรียบร้อยแล้ว";
             }
         }
         catch { }
-        TempData["MarketingMsg"] = $"อัปเดตสถานะโฆษณา #{id} เป็น '{status}' เรียบร้อยแล้ว!";
         return RedirectToAction("Ads");
     }
 
-    // Wireframe หน้า 20: จัดการโปรโมชั่นและแพ็กเกจสมาชิก (พร้อมสวิตช์เปิด-ปิด และปุ่ม + เพิ่มแพ็กเกจ)
     public IActionResult Promotions()
     {
+        if (!CheckMarketingAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Marketing";
         ViewData["ActiveMenu"] = "promotions";
 
-        var plans = GetPlansOrDefault();
+        var plans = (from p in _db.SubscriptionPlans select p).ToList();
         return View(plans);
     }
 
@@ -115,18 +128,20 @@ public class MarketingController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult TogglePlan(int id)
     {
+        if (!CheckMarketingAccess()) return RedirectToAction("Login", "Account");
+
         try
         {
-            var plan = _db.SubscriptionPlans.FirstOrDefault(p => p.Id == id);
+            var plan = (from p in _db.SubscriptionPlans where p.Id == id select p).FirstOrDefault();
             if (plan != null)
             {
                 plan.IsActive = !(plan.IsActive ?? true);
                 plan.UpdatedAt = DateTime.Now;
                 _db.SaveChanges();
+                TempData["PromoMsg"] = "สลับสถานะแพ็กเกจ #" + id + " เรียบร้อยแล้ว";
             }
         }
         catch { }
-        TempData["PromoMsg"] = $"สลับสถานะการเปิดใช้งานแพ็กเกจ #{id} เรียบร้อยแล้ว!";
         return RedirectToAction("Promotions");
     }
 
@@ -134,58 +149,80 @@ public class MarketingController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult AddPromotion(string name, string description, decimal price, int durationDays)
     {
+        if (!CheckMarketingAccess()) return RedirectToAction("Login", "Account");
+
         try
         {
-            var plan = new SubscriptionPlan
-            {
-                Name = name,
-                Description = description,
-                Price = price,
-                DurationDays = durationDays,
-                IsActive = true,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
-            _db.SubscriptionPlans.Add(plan);
+            SubscriptionPlan plan = new();
+            plan.Name = name;
+            plan.Description = description;
+            plan.Price = price;
+            plan.DurationDays = durationDays;
+            plan.IsActive = true;
+            plan.CreatedAt = DateTime.Now;
+            plan.UpdatedAt = DateTime.Now;
+
+            _db.Add(plan);
             _db.SaveChanges();
+            TempData["PromoMsg"] = "สร้างแพ็กเกจโปรโมชั่น '" + name + "' สำเร็จแล้ว";
         }
         catch { }
-        TempData["PromoMsg"] = $"สร้างแคมเปญโปรโมชั่น '{name}' ราคา {price:N0} บาท สำเร็จแล้ว!";
         return RedirectToAction("Promotions");
     }
 
-    // Wireframe หน้า 21: เรื่องที่ถูกส่งต่อมาจากฝ่าย Support เกี่ยวกับโฆษณา/การตลาด
     public IActionResult Issues(string? search)
     {
+        if (!CheckMarketingAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Marketing";
         ViewData["ActiveMenu"] = "issues";
 
-        List<SupportTicket> tickets = new();
-        try
-        {
-            tickets = _db.SupportTickets.Include(t => t.Customer).OrderByDescending(t => t.CreatedAt).ToList();
-        }
-        catch { }
-
-        if (!tickets.Any())
-        {
-            tickets = new List<SupportTicket>
-            {
-                new SupportTicket { Id = 3, Subject = "สอบถามวิธีเพิ่มสถานที่มากกว่า 3 แห่งใน 1 ทริป และโปรโมชั่นลงแอดร้านอาหาร", Description = "ต้องการจัดรูทไปเที่ยว 5 ที่ และสนใจลงป้ายแบนเนอร์โปรโมทร้านอาหารเยาวราชครับ", Status = "open", Priority = "medium", CreatedAt = DateTime.Now.AddHours(-4) }
-            };
-        }
+        var tickets = (from t in _db.SupportTickets.Include(x => x.Customer).Include(x => x.Employee)
+                       where (t.Employee != null && t.Employee.Department == "Marketing") ||
+                             t.Subject.Contains("[ส่งต่อแผนก Marketing]")
+                       orderby t.CreatedAt descending
+                       select t).ToList();
 
         if (!string.IsNullOrEmpty(search))
         {
-            tickets = tickets.Where(t => t.Subject.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+            tickets = tickets.Where(t =>
+                t.Subject.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                t.Description.Contains(search, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
         }
         ViewBag.Search = search;
         return View(tickets);
     }
 
-    // Wireframe หน้า 22: ตั้งค่าบัญชีพนักงานการตลาด
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ResolveIssue(int id, string? resolutionNote)
+    {
+        if (!CheckMarketingAccess()) return RedirectToAction("Login", "Account");
+
+        try
+        {
+            var t = (from x in _db.SupportTickets where x.Id == id select x).FirstOrDefault();
+            if (t != null)
+            {
+                if (!string.IsNullOrWhiteSpace(resolutionNote))
+                {
+                    t.Description += "\n\n[ฝ่าย Marketing ดำเนินการแล้ว - " + DateTime.Now.ToString("dd/MM/yyyy HH:mm") + "]: " + resolutionNote;
+                }
+                t.Status = "resolved";
+                t.UpdatedAt = DateTime.Now;
+                _db.SaveChanges();
+                TempData["MarketingIssueMsg"] = "ดำเนินการแก้ไขคำร้อง #" + id + " เสร็จสิ้นแล้ว";
+            }
+        }
+        catch { }
+        return RedirectToAction("Issues");
+    }
+
     public IActionResult Settings()
     {
+        if (!CheckMarketingAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Marketing";
         ViewData["ActiveMenu"] = "settings";
         return View("~/Views/Dev/Settings.cshtml");

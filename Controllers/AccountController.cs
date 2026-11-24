@@ -10,6 +10,7 @@ namespace Suttipong_9922_L004.Controllers;
 public class AccountController : Controller
 {
     private readonly Csi402dbContext _db;
+
     public AccountController(Csi402dbContext db)
     {
         _db = db;
@@ -20,12 +21,12 @@ public class AccountController : Controller
         return View();
     }
 
-    public IActionResult Login(string username, string password, string email, string phoneNumber, string source)
+    public IActionResult Login(string? username, string? password, string? email, string? phoneNumber, string? source)
     {
         var model = new LoginViewModel
         {
-            Username = username,
-            Password = password
+            Username = username ?? "",
+            Password = password ?? ""
         };
 
         ViewBag.Email = email;
@@ -37,42 +38,70 @@ public class AccountController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Login(LoginViewModel data, string email, string phoneNumber, string source)
+    public IActionResult Login(LoginViewModel data, string? email, string? phoneNumber, string? source)
     {
-        var checkUser = _db.Users
-            .Include(u => u.Employee)
-            .FirstOrDefault(u => (u.UserName == data.Username || u.Email == data.Username)
-                                 && u.Password == data.Password);
+        // ค้นหาผู้ใช้จากฐานข้อมูล (เหมือนใน HomeController)
+        var checkUser = (from u in _db.Users.Include(x => x.Employee)
+                         where (u.UserName == data.Username || u.Email == data.Username)
+                               && u.Password == data.Password
+                         select u).FirstOrDefault();
 
         if (checkUser != null)
         {
+            // ตรวจสอบว่าบัญชีเปิดใช้งานอยู่หรือไม่
+            if (checkUser.Status != "active")
+            {
+                ViewBag.Status = "บัญชีนี้ถูกระงับการใช้งานหรือรอการอนุมัติ";
+                return View(data);
+            }
+
             checkUser.LastActive = DateTime.Now;
             _db.SaveChanges();
 
+            // เก็บข้อมูลลง Session เพื่อใช้ตรวจสอบสิทธิ์ในแต่ละหน้า
             HttpContext.Session.SetInt32("UserId", checkUser.Id);
             HttpContext.Session.SetString("Username", checkUser.UserName);
             HttpContext.Session.SetString("Email", checkUser.Email);
             HttpContext.Session.SetString("Role", checkUser.Role ?? "customer");
 
-            string dept = checkUser.Employee?.Department ?? (checkUser.Role == "admin" ? "Dev" : "");
+            string dept = "";
+            if (checkUser.Employee != null && !string.IsNullOrEmpty(checkUser.Employee.Department))
+            {
+                dept = checkUser.Employee.Department;
+            }
+            else if (checkUser.Role == "admin")
+            {
+                dept = "Dev";
+            }
             HttpContext.Session.SetString("Department", dept);
 
+            // แยกหน้าหลังเข้าสู่ระบบตาม Role และแผนก
             if (checkUser.Role == "admin")
             {
                 return RedirectToAction("Dashboard", "Dev");
             }
             else if (checkUser.Role == "employee")
             {
-                if (dept.Equals("Support", StringComparison.OrdinalIgnoreCase))
+                if (dept == "Support")
+                {
                     return RedirectToAction("Index", "Support");
-                if (dept.Equals("Dev", StringComparison.OrdinalIgnoreCase))
+                }
+                else if (dept == "Dev")
+                {
                     return RedirectToAction("Dashboard", "Dev");
-                if (dept.Equals("Marketing", StringComparison.OrdinalIgnoreCase))
+                }
+                else if (dept == "Marketing")
+                {
                     return RedirectToAction("Dashboard", "Marketing");
-                if (dept.Equals("Accounting", StringComparison.OrdinalIgnoreCase))
+                }
+                else if (dept == "Accounting")
+                {
                     return RedirectToAction("Dashboard", "Accounting");
-
-                return RedirectToAction("Dashboard", "Dev");
+                }
+                else
+                {
+                    return RedirectToAction("Dashboard", "Dev");
+                }
             }
             else
             {
@@ -86,18 +115,24 @@ public class AccountController : Controller
         }
     }
 
+    // ทางลัดเข้าสู่ระบบแยกตามตำแหน่งสำหรับใช้สาธิตตอนพรีเซนต์
     public IActionResult QuickLogin(string roleType)
     {
-        var user = _db.Users.Include(u => u.Employee).FirstOrDefault(u =>
-            (roleType == "Customer" && u.Role == "customer") ||
-            (roleType == "Support" && u.Employee != null && u.Employee.Department == "Support") ||
-            (roleType == "Dev" && u.Employee != null && u.Employee.Department == "Dev") ||
-            (roleType == "Marketing" && u.Employee != null && u.Employee.Department == "Marketing") ||
-            (roleType == "Accounting" && u.Employee != null && u.Employee.Department == "Accounting") ||
-            (roleType == "Admin" && u.Role == "admin")
-        );
+        User? user = null;
+        try
+        {
+            if (roleType == "Customer")
+                user = (from u in _db.Users where u.Role == "customer" && u.Status == "active" select u).FirstOrDefault();
+            else if (roleType == "Admin")
+                user = (from u in _db.Users where u.Role == "admin" && u.Status == "active" select u).FirstOrDefault();
+            else
+                user = (from u in _db.Users.Include(x => x.Employee)
+                        where u.Employee != null && u.Employee.Department == roleType && u.Status == "active"
+                        select u).FirstOrDefault();
+        }
+        catch { }
 
-        string mappedDept = roleType == "Admin" ? "Dev" : roleType;
+        string mappedDept = (roleType == "Admin") ? "Dev" : roleType;
 
         if (user != null)
         {
@@ -112,19 +147,16 @@ public class AccountController : Controller
             HttpContext.Session.SetInt32("UserId", 1);
             HttpContext.Session.SetString("Username", roleType.ToLower());
             HttpContext.Session.SetString("Email", roleType.ToLower() + "@tanglat.com");
-            HttpContext.Session.SetString("Role", roleType == "Customer" ? "customer" : "employee");
+            HttpContext.Session.SetString("Role", roleType == "Customer" ? "customer" : (roleType == "Admin" ? "admin" : "employee"));
             HttpContext.Session.SetString("Department", mappedDept);
         }
 
-        return roleType switch
-        {
-            "Support" => RedirectToAction("Index", "Support"),
-            "Dev" => RedirectToAction("Dashboard", "Dev"),
-            "Marketing" => RedirectToAction("Dashboard", "Marketing"),
-            "Accounting" => RedirectToAction("Dashboard", "Accounting"),
-            "Admin" => RedirectToAction("UserList", "Dev"),
-            _ => RedirectToAction("Home", "Customer")
-        };
+        if (roleType == "Support") return RedirectToAction("Index", "Support");
+        if (roleType == "Dev") return RedirectToAction("Dashboard", "Dev");
+        if (roleType == "Marketing") return RedirectToAction("Dashboard", "Marketing");
+        if (roleType == "Accounting") return RedirectToAction("Dashboard", "Accounting");
+        if (roleType == "Admin") return RedirectToAction("UserList", "Dev");
+        return RedirectToAction("Home", "Customer");
     }
 
     public IActionResult Logout()
@@ -144,7 +176,7 @@ public class AccountController : Controller
     {
         if (ModelState.IsValid)
         {
-            if (data.Password != null && data.Password == data.ConfirmPassword)
+            if (!string.IsNullOrEmpty(data.Password) && data.Password == data.ConfirmPassword)
             {
                 var checkUser = (from u in _db.Users
                                  where u.Email == data.Email || u.UserName == data.Username
@@ -190,19 +222,32 @@ public class AccountController : Controller
         }
     }
 
-    public IActionResult Index(string source, string username, bool rememberMe, string email, string phoneNumber)
+    public IActionResult Index()
     {
-        return RedirectToAction("Dashboard", "Dev");
+        return RedirectToAction("Login", "Account");
     }
 
-    // ส่งต่อ URL เดิม (/Account/UserList, /Account/AddUser, /Account/EditUser) ไปให้ฝ่าย Dev จัดการทั้งหมด
-    public IActionResult UserList(string? search) => RedirectToAction("UserList", "Dev", new { search });
-    public IActionResult AddUser() => RedirectToAction("AddUser", "Dev");
-    public IActionResult EditUser(int id) => RedirectToAction("EditUser", "Dev", new { id });
+    public IActionResult UserList(string? search)
+    {
+        return RedirectToAction("UserList", "Dev", new { search = search });
+    }
+
+    public IActionResult AddUser()
+    {
+        return RedirectToAction("AddUser", "Dev");
+    }
+
+    public IActionResult EditUser(int id)
+    {
+        return RedirectToAction("EditUser", "Dev", new { id = id });
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult DeleteUser(int id) => RedirectToAction("DeleteUser", "Dev", new { id });
+    public IActionResult DeleteUser(int id)
+    {
+        return RedirectToAction("DeleteUser", "Dev", new { id = id });
+    }
 
     public IActionResult Error()
     {

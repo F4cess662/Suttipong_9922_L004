@@ -1,0 +1,125 @@
+@model Suttipong_9922_L004.Models.Employee
+@{
+    Layout = null;
+    decimal baseSalary = Model.Salary ?? 25000m;
+    decimal socialSecurity = Math.Min(750m, Math.Round(baseSalary * 0.05m, 2));
+    decimal withholdingTax = baseSalary > 30000m ? Math.Round((baseSalary - 30000m) * 0.05m, 2) : 0m;
+    decimal netPay = baseSalary - socialSecurity - withholdingTax;
+}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ใบแจ้งเงินเดือน (Payslip) - @Model.FirstName @Model.LastName</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+    <style>
+        body {
+            background: #f4f7f5;
+            font-family: "Noto Sans Thai", "Inter", "Segoe UI", sans-serif;
+            color: #1e293b;
+            padding: 36px 16px;
+        }
+        .payslip-sheet {
+            max-width: 780px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 40px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+        }
+        @@media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .payslip-sheet {
+                box-shadow: none;
+                border: 1px solid #cbd5e1;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="payslip-sheet">
+        <div class="d-flex justify-content-between align-items-start pb-4 mb-4 border-bottom">
+            <div>
+                <h4 class="fw-bold mb-1" style="color: #0b3d2e;"><i class="bi bi-signpost-split-fill me-2"></i>ทางลัด (Tang-Lat Co., Ltd.)</h4>
+                <div class="small text-secondary">ใบแจ้งยอดเงินเดือนพนักงาน (Official Employee Payslip)</div>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">งวดประจำเดือน @DateTime.Now.ToString("MM/yyyy")</span>
+                <div class="small text-secondary mt-1">วันที่ออกเอกสาร: @DateTime.Now.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4 p-3 rounded-3 bg-light">
+            <div class="col-sm-6">
+                <div class="small text-secondary">ชื่อ-นามสกุลพนักงาน</div>
+                <div class="fw-bold">@Model.FirstName @Model.LastName</div>
+                <div class="small text-secondary mt-2">รหัสพนักงาน</div>
+                <div class="fw-semibold">EMP-@Model.Id.ToString("D3")</div>
+            </div>
+            <div class="col-sm-6">
+                <div class="small text-secondary">ตำแหน่ง / แผนก</div>
+                <div class="fw-bold">@Model.Position (@Model.Department)</div>
+                <div class="small text-secondary mt-2">วันที่เริ่มงาน</div>
+                <div class="fw-semibold">@(Model.HireDate?.ToString("dd/MM/yyyy") ?? "-")</div>
+            </div>
+        </div>
+
+        <table class="table table-bordered align-middle mb-4">
+            <thead class="table-light small">
+                <tr>
+                    <th>รายการรายได้ / รายการหัก</th>
+                    <th class="text-end" style="width: 180px;">จำนวนเงิน (บาท)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>เงินเดือนพื้นฐาน (Base Salary)</td>
+                    <td class="text-end fw-semibold text-success">+@baseSalary.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <td>หักสมทบกองทุนประกันสังคม 5% (Social Security)</td>
+                    <td class="text-end text-danger">-@socialSecurity.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <td>ภาษีหัก ณ ที่จ่าย (Withholding Tax)</td>
+                    <td class="text-end text-danger">-@withholdingTax.ToString("N2")</td>
+                </tr>
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <th class="fw-bold">เงินได้สุทธิโอนเข้าบัญชี (Net Pay)</th>
+                    <th class="text-end fs-5 fw-bold" style="color: #0b3d2e;">@netPay.ToString("N2") ฿</th>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="row pt-4 mt-4 border-top text-center small text-secondary">
+            <div class="col-6">
+                <div class="mb-4">......................................................</div>
+                <div>ฝ่ายบัญชีและการเงิน (ผู้อนุมัติจ่าย)</div>
+            </div>
+            <div class="col-6">
+                <div class="mb-4">......................................................</div>
+                <div>พนักงานผู้รับเงิน (@Model.FirstName @Model.LastName)</div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top no-print">
+            <a asp-controller="Accounting" asp-action="Payroll" class="btn btn-light border rounded-3 px-4">กลับหน้าเงินเดือน</a>
+            <button type="button" onclick="window.print()" class="btn btn-dark rounded-3 px-4" style="background-color:#0b3d2e;">
+                <i class="bi bi-printer me-1"></i>สั่งพิมพ์ / บันทึกเป็น PDF
+            </button>
+        </div>
+    </div>
+</body>
+</html>

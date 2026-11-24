@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Suttipong_9922_L004.Models;
@@ -11,78 +15,99 @@ namespace Suttipong_9922_L004.Controllers;
 public class DevController : Controller
 {
     private readonly Csi402dbContext _db;
+    private readonly IWebHostEnvironment _env;
 
-    public DevController(Csi402dbContext db)
+    public DevController(Csi402dbContext db, IWebHostEnvironment env)
     {
         _db = db;
+        _env = env;
     }
 
-    private List<Location> GetLocationsOrDefault()
+    // ตรวจสอบสิทธิ์การเข้าถึง: อนุญาตเฉพาะฝ่าย Dev หรือ Admin เท่านั้น
+    private bool CheckDevAccess()
     {
-        try
-        {
-            var list = _db.Locations.OrderByDescending(l => l.Id).ToList();
-            if (list.Any()) return list;
-        }
-        catch { }
-
-        return new List<Location>
-        {
-            new Location { Id = 1, Name = "วัดพระศรีรัตนศาสดาราม (วัดพระแก้ว)", Description = "วัดคู่บ้านคู่เมืองในพระบรมมหาราชวัง", Address = "เขตพระนคร กรุงเทพฯ", Latitude = 13.751644m, Longitude = 100.492704m, Category = "attraction", ImageUrl = "https://images.unsplash.com/photo-1563492065599-3520f775eeed?auto=format&fit=crop&w=600&q=80", IsActive = true },
-            new Location { Id = 2, Name = "วัดอรุณราชวราราม (วัดแจ้ง)", Description = "พระปรางค์วัดอรุณริมแม่น้ำเจ้าพระยา", Address = "เขตบางกอกใหญ่ กรุงเทพฯ", Latitude = 13.743884m, Longitude = 100.488446m, Category = "attraction", ImageUrl = "https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=600&q=80", IsActive = true },
-            new Location { Id = 3, Name = "เยาวราช (Chinatown Bangkok)", Description = "สตรีทฟู้ดยามค่ำคืน", Address = "เขตสัมพันธวงศ์ กรุงเทพฯ", Latitude = 13.741136m, Longitude = 100.508305m, Category = "restaurant", ImageUrl = "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=600&q=80", IsActive = true },
-            new Location { Id = 4, Name = "สยามพารากอน (Siam Paragon)", Description = "ศูนย์การค้าใจกลางสยาม", Address = "เขตปทุมวัน กรุงเทพฯ", Latitude = 13.746241m, Longitude = 100.534740m, Category = "shopping", ImageUrl = "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?auto=format&fit=crop&w=600&q=80", IsActive = true }
-        };
+        var userId = HttpContext.Session.GetInt32("UserId");
+        var role = HttpContext.Session.GetString("Role");
+        var dept = HttpContext.Session.GetString("Department");
+        if (userId == null) return false;
+        if (role == "admin") return true;
+        if (role == "employee" && dept == "Dev") return true;
+        return false;
     }
 
-    private List<TransportType> GetTransportsOrDefault()
+    private string? SaveUploadedFile(IFormFile? file, string subFolder)
     {
-        try
-        {
-            var list = _db.TransportTypes.ToList();
-            if (list.Any()) return list;
-        }
-        catch { }
+        if (file == null || file.Length == 0) return null;
+        if (file.Length > 5 * 1024 * 1024) return null;
 
-        return new List<TransportType>
+        string ext = Path.GetExtension(file.FileName).ToLower();
+        if (ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp") return null;
+
+        string uploadsRoot = Path.Combine(_env.WebRootPath, "uploads", subFolder);
+        Directory.CreateDirectory(uploadsRoot);
+
+        string uniqueName = subFolder.Substring(0, 1) + "_" + DateTime.Now.ToString("MMddHHmmss") + "_" + Guid.NewGuid().ToString("N").Substring(0, 4) + ext;
+        string fullPath = Path.Combine(uploadsRoot, uniqueName);
+
+        using (var stream = new FileStream(fullPath, FileMode.Create))
         {
-            new TransportType { Id = 1, Name = "รถเมล์ขสมก. (AC Bus)", Type = "bus", BaseFare = 15m, FarePerKm = 2m, FarePerStation = 0m, Description = "รถโดยสารปรับอากาศ", IsActive = true },
-            new TransportType { Id = 2, Name = "รถไฟฟ้า BTS / MRT", Type = "train", BaseFare = 17m, FarePerKm = 0m, FarePerStation = 4m, Description = "รถไฟฟ้าสายหลักในกรุงเทพฯ", IsActive = true },
-            new TransportType { Id = 3, Name = "รถมอเตอร์ไซค์รับจ้าง (วิน)", Type = "motorcycle", BaseFare = 25m, FarePerKm = 10m, FarePerStation = 0m, Description = "มอเตอร์ไซค์วินรับจ้าง", IsActive = true }
-        };
+            file.CopyTo(stream);
+        }
+
+        return "/uploads/" + subFolder + "/" + uniqueName;
     }
 
     public IActionResult Dashboard()
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "dashboard";
 
-        var locations = GetLocationsOrDefault();
-        var transports = GetTransportsOrDefault();
-        int openBugs = 2;
-        int totalUsers = 7;
+        int locationCount = 0;
+        int transportCount = 0;
+        int openBugs = 0;
+        int totalUsers = 0;
+        int attractionCount = 0;
+        int restaurantCount = 0;
+        int shoppingCount = 0;
+        int otherCount = 0;
 
         try
         {
-            if (_db.Users.Any()) totalUsers = _db.Users.Count();
-            if (_db.SupportTickets.Any()) openBugs = _db.SupportTickets.Count(t => t.Status != "resolved");
+            var locations = (from l in _db.Locations select l).ToList();
+            locationCount = locations.Count;
+            attractionCount = locations.Count(l => l.Category == "attraction");
+            restaurantCount = locations.Count(l => l.Category == "restaurant");
+            shoppingCount = locations.Count(l => l.Category == "shopping");
+            otherCount = locations.Count(l => l.Category != "attraction" && l.Category != "restaurant" && l.Category != "shopping");
+
+            transportCount = _db.TransportTypes.Count();
+            totalUsers = _db.Users.Count();
+            openBugs = (from t in _db.SupportTickets.Include(x => x.Employee)
+                        where t.Status != "resolved" &&
+                              ((t.Employee != null && t.Employee.Department == "Dev") || t.Subject.Contains("[ส่งต่อแผนก Dev]"))
+                        select t).Count();
         }
         catch { }
 
-        ViewBag.LocationCount = locations.Count;
-        ViewBag.TransportCount = transports.Count;
+        ViewBag.LocationCount = locationCount;
+        ViewBag.TransportCount = transportCount;
         ViewBag.OpenBugs = openBugs;
         ViewBag.TotalUsers = totalUsers;
+        ViewBag.CategoryChartJson = JsonSerializer.Serialize(new int[] { attractionCount, restaurantCount, shoppingCount, otherCount });
 
         return View();
     }
 
     public IActionResult Places(string? search)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "places";
 
-        var locations = GetLocationsOrDefault();
+        var locations = (from l in _db.Locations orderby l.Id descending select l).ToList();
         if (!string.IsNullOrEmpty(search))
         {
             locations = locations.Where(l =>
@@ -96,31 +121,92 @@ public class DevController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult AddPlace(string name, string description, string address, decimal latitude, decimal longitude, string category, string? imageUrl)
+    public IActionResult AddPlace(string name, string description, string address, decimal latitude, decimal longitude, string category, string? imageUrl, IFormFile? placeImage)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
+        string? savedImg = SaveUploadedFile(placeImage, "places") ?? imageUrl;
         try
         {
-            var loc = new Location
-            {
-                Name = name,
-                Description = description,
-                Address = address,
-                Latitude = latitude,
-                Longitude = longitude,
-                Category = string.IsNullOrEmpty(category) ? "attraction" : category,
-                ImageUrl = string.IsNullOrEmpty(imageUrl) ? "https://images.unsplash.com/photo-1563492065599-3520f775eeed?auto=format&fit=crop&w=600&q=80" : imageUrl,
-                IsActive = true,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
-            _db.Locations.Add(loc);
+            Location loc = new();
+            loc.Name = name;
+            loc.Description = description;
+            loc.Address = address;
+            loc.Latitude = latitude;
+            loc.Longitude = longitude;
+            loc.Category = string.IsNullOrEmpty(category) ? "attraction" : category;
+            loc.ImageUrl = string.IsNullOrEmpty(savedImg) ? "https://images.unsplash.com/photo-1563492065599-3520f775eeed?auto=format&fit=crop&w=600&q=80" : savedImg;
+            loc.IsActive = true;
+            loc.CreatedAt = DateTime.Now;
+            loc.UpdatedAt = DateTime.Now;
+
+            _db.Add(loc);
             _db.SaveChanges();
-            TempData["DevMsg"] = $"เพิ่มสถานที่ '{name}' สำเร็จแล้ว";
+            TempData["DevMsg"] = "เพิ่มสถานที่ '" + name + "' สำเร็จแล้ว";
         }
         catch (Exception ex)
         {
-            TempData["DevMsg"] = $"บันทึกสถานที่ '{name}' สำเร็จ ({ex.Message})";
+            TempData["DevMsg"] = "เกิดข้อผิดพลาด: " + ex.Message;
         }
+        return RedirectToAction("Places");
+    }
+
+    [HttpGet]
+    public IActionResult EditPlace(int id)
+    {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
+        ViewData["Department"] = "Dev";
+        ViewData["ActiveMenu"] = "places";
+
+        var loc = (from l in _db.Locations where l.Id == id select l).FirstOrDefault();
+        if (loc == null) return RedirectToAction("Places");
+
+        return View(loc);
+    }
+
+    // แก้บัค checkbox isActive: ตั้งค่าเริ่มต้นเป็น false เพื่อรองรับกรณีเอาติ๊กออก
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult EditPlace(int id, string name, string? description, string? address, decimal latitude, decimal longitude, string category, string? imageUrl, IFormFile? placeImage, bool isActive = false)
+    {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
+        string? uploadedImg = SaveUploadedFile(placeImage, "places");
+
+        try
+        {
+            var loc = (from l in _db.Locations where l.Id == id select l).FirstOrDefault();
+            if (loc != null)
+            {
+                loc.Name = name;
+                loc.Description = description;
+                loc.Address = address;
+                loc.Latitude = latitude;
+                loc.Longitude = longitude;
+                loc.Category = string.IsNullOrEmpty(category) ? "attraction" : category;
+                loc.IsActive = isActive;
+
+                if (!string.IsNullOrEmpty(uploadedImg))
+                {
+                    loc.ImageUrl = uploadedImg;
+                }
+                else if (!string.IsNullOrWhiteSpace(imageUrl))
+                {
+                    loc.ImageUrl = imageUrl;
+                }
+
+                loc.UpdatedAt = DateTime.Now;
+                _db.Update(loc);
+                _db.SaveChanges();
+                TempData["DevMsg"] = "แก้ไขข้อมูลสถานที่ '" + loc.Name + "' เรียบร้อยแล้ว";
+            }
+        }
+        catch (Exception ex)
+        {
+            TempData["DevMsg"] = "เกิดข้อผิดพลาด: " + ex.Message;
+        }
+
         return RedirectToAction("Places");
     }
 
@@ -128,27 +214,38 @@ public class DevController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult DeletePlace(int id)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         try
         {
-            var loc = _db.Locations.FirstOrDefault(l => l.Id == id);
+            var loc = (from l in _db.Locations where l.Id == id select l).FirstOrDefault();
             if (loc != null)
             {
-                _db.Locations.Remove(loc);
+                // ลบจุดแวะพักที่อ้างอิงสถานที่นี้ก่อนเพื่อป้องกัน Foreign Key Error
+                var refs = (from tl in _db.TripLocations where tl.LocationId == id select tl).ToList();
+                if (refs.Count > 0) _db.RemoveRange(refs);
+
+                _db.Remove(loc);
                 _db.SaveChanges();
+                TempData["DevMsg"] = "ลบสถานที่รหัส #" + id + " เรียบร้อยแล้ว";
             }
         }
-        catch { }
-        TempData["DevMsg"] = $"ลบสถานที่รหัส #{id} เรียบร้อยแล้ว";
+        catch (Exception ex)
+        {
+            TempData["DevMsg"] = "ไม่สามารถลบสถานที่ได้: " + ex.Message;
+        }
         return RedirectToAction("Places");
     }
 
     [HttpGet]
     public IActionResult Pricing()
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "pricing";
 
-        var transports = GetTransportsOrDefault();
+        var transports = (from t in _db.TransportTypes select t).ToList();
         return View(transports);
     }
 
@@ -156,9 +253,11 @@ public class DevController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult UpdatePricing(int id, string name, decimal baseFare, decimal farePerKm, decimal farePerStation, string? description)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         try
         {
-            var t = _db.TransportTypes.FirstOrDefault(x => x.Id == id);
+            var t = (from x in _db.TransportTypes where x.Id == id select x).FirstOrDefault();
             if (t != null)
             {
                 t.Name = name;
@@ -168,36 +267,32 @@ public class DevController : Controller
                 t.Description = description;
                 t.UpdatedAt = DateTime.Now;
                 _db.SaveChanges();
+                TempData["PricingMsg"] = "บันทึกอัตราค่าโดยสาร '" + name + "' เรียบร้อยแล้ว";
             }
         }
         catch { }
-        TempData["PricingMsg"] = $"บันทึกอัตราค่าโดยสาร '{name}' เรียบร้อยแล้ว";
         return RedirectToAction("Pricing");
     }
 
     public IActionResult Issues(string? search)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "issues";
 
-        List<SupportTicket> tickets = new();
-        try
-        {
-            tickets = _db.SupportTickets.Include(t => t.Customer).OrderByDescending(t => t.CreatedAt).ToList();
-        }
-        catch { }
-
-        if (!tickets.Any())
-        {
-            tickets = new List<SupportTicket>
-            {
-                new SupportTicket { Id = 1, Subject = "[ส่งต่อแผนก Dev] พิกัดหมุดวัดอรุณคลาดเคลื่อนเล็กน้อย", Description = "เวลาซูมแผนที่เข้าไปใกล้ๆ หมุดวัดอรุณอยู่ขยับไปทางท่าเรือ รบกวนทีม Dev ช่วยปรับพิกัดให้ตรงพระปรางค์ด้วยครับ", Status = "in_progress", Priority = "high", CreatedAt = DateTime.Now.AddHours(-3) }
-            };
-        }
+        var tickets = (from t in _db.SupportTickets.Include(x => x.Customer).Include(x => x.Employee)
+                       where (t.Employee != null && t.Employee.Department == "Dev") ||
+                             t.Subject.Contains("[ส่งต่อแผนก Dev]")
+                       orderby t.CreatedAt descending
+                       select t).ToList();
 
         if (!string.IsNullOrEmpty(search))
         {
-            tickets = tickets.Where(t => t.Subject.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+            tickets = tickets.Where(t =>
+                t.Subject.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                t.Description.Contains(search, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
         }
 
         ViewBag.Search = search;
@@ -208,33 +303,31 @@ public class DevController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult ResolveIssue(int id)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         try
         {
-            var t = _db.SupportTickets.FirstOrDefault(x => x.Id == id);
+            var t = (from x in _db.SupportTickets where x.Id == id select x).FirstOrDefault();
             if (t != null)
             {
                 t.Status = "resolved";
                 t.UpdatedAt = DateTime.Now;
                 _db.SaveChanges();
+                TempData["DevIssueMsg"] = "ปิดงานรายการ #" + id + " เรียบร้อยแล้ว";
             }
         }
         catch { }
-        TempData["DevIssueMsg"] = $"ปิดงานรายการ #{id} เรียบร้อยแล้ว";
         return RedirectToAction("Issues");
     }
 
-    // =========================================================================
-    // ระบบจัดการผู้ใช้งานและพนักงาน (CRUD: UserList, AddUser, EditUser, DeleteUser) ภายใต้ฝ่าย Dev
-    // =========================================================================
     public IActionResult UserList(string? search, string? roleFilter)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "users";
 
-        List<UserListViewModel> users = new();
-        try
-        {
-            users = (from u in _db.Users.Include(x => x.Employee)
+        var users = (from u in _db.Users.Include(x => x.Employee)
                      select new UserListViewModel
                      {
                          Id = u.Id,
@@ -248,20 +341,6 @@ public class DevController : Controller
                          Position = u.Employee != null ? u.Employee.Position : "-",
                          Salary = u.Employee != null ? u.Employee.Salary : null
                      }).ToList();
-        }
-        catch { }
-
-        if (!users.Any())
-        {
-            users = new List<UserListViewModel>
-            {
-                new UserListViewModel { Id = 1, FullName = "customer01", Username = "customer01", Email = "customer@tanglat.com", PhoneNumber = "0812345678", Role = "customer", Status = "active", Department = "-", Position = "-" },
-                new UserListViewModel { Id = 3, FullName = "พิมพ์ชนก ใจดี", Username = "support01", Email = "support@tanglat.com", PhoneNumber = "0821112222", Role = "employee", Status = "active", Department = "Support", Position = "Customer Support Officer", Salary = 26000m },
-                new UserListViewModel { Id = 4, FullName = "สุทธิพงษ์ พัฒนาระบบ", Username = "dev01", Email = "dev@tanglat.com", PhoneNumber = "0833334444", Role = "employee", Status = "active", Department = "Dev", Position = "Full-Stack Developer", Salary = 45000m },
-                new UserListViewModel { Id = 5, FullName = "นภัสสร สื่อสารการตลาด", Username = "marketing01", Email = "marketing@tanglat.com", PhoneNumber = "0845556666", Role = "employee", Status = "active", Department = "Marketing", Position = "Marketing Specialist", Salary = 34000m },
-                new UserListViewModel { Id = 6, FullName = "ธนดล การคลัง", Username = "accounting01", Email = "accounting@tanglat.com", PhoneNumber = "0857778888", Role = "employee", Status = "active", Department = "Accounting", Position = "Senior Accountant", Salary = 38000m }
-            };
-        }
 
         if (!string.IsNullOrEmpty(search))
         {
@@ -286,6 +365,8 @@ public class DevController : Controller
     [HttpGet]
     public IActionResult AddUser()
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "users";
         return View("~/Views/Account/AddUser.cshtml", new AddUserViewModel());
@@ -295,6 +376,8 @@ public class DevController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult AddUser(AddUserViewModel data)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "users";
 
@@ -304,73 +387,54 @@ public class DevController : Controller
             return View("~/Views/Account/AddUser.cshtml", data);
         }
 
-        try
+        var checkUser = (from u in _db.Users where u.Email == data.Email || u.UserName == data.Username select u).FirstOrDefault();
+        if (checkUser != null)
         {
-            var checkUser = _db.Users.FirstOrDefault(u => u.Email == data.Email || u.UserName == data.Username);
-            if (checkUser != null)
-            {
-                ViewBag.Status = "อีเมลหรือชื่อผู้ใช้นี้มีในระบบแล้ว";
-                return View("~/Views/Account/AddUser.cshtml", data);
-            }
-
-            User u = new()
-            {
-                UserName = data.Username,
-                Email = data.Email,
-                PhoneNumber = data.PhoneNumber,
-                Password = data.Password,
-                Role = (data.Role == "admin") ? "admin" : (data.Role == "employee" ? "employee" : "customer"),
-                Status = data.IsActive ? "active" : "pending",
-                LastActive = DateTime.Now
-            };
-
-            _db.Users.Add(u);
-            _db.SaveChanges();
-
-            // หากเลือกสิทธิ์เป็น พนักงาน (employee) หรือ ผู้ดูแลระบบ (admin) ให้บันทึกข้อมูลลงตาราง employees พร้อมแผนกและเงินเดือนด้วย
-            if (u.Role == "employee" || u.Role == "admin")
-            {
-                Employee emp = new()
-                {
-                    UserId = u.Id,
-                    FirstName = !string.IsNullOrWhiteSpace(data.FirstName) ? data.FirstName : data.Username,
-                    LastName = !string.IsNullOrWhiteSpace(data.LastName) ? data.LastName : "",
-                    Department = !string.IsNullOrWhiteSpace(data.Department) ? data.Department : "Dev",
-                    Position = !string.IsNullOrWhiteSpace(data.Position) ? data.Position : "Staff",
-                    Salary = data.Salary ?? 25000m,
-                    HireDate = DateOnly.FromDateTime(DateTime.Today)
-                };
-                _db.Employees.Add(emp);
-                _db.SaveChanges();
-            }
-
-            TempData["UserMsg"] = $"เพิ่มบัญชี '{u.UserName}' เรียบร้อยแล้ว";
-            return RedirectToAction("UserList");
-        }
-        catch (Exception ex)
-        {
-            ViewBag.Status = $"ไม่สามารถบันทึกข้อมูลได้: {ex.Message}";
+            ViewBag.Status = "อีเมลหรือชื่อผู้ใช้นี้มีในระบบแล้ว";
             return View("~/Views/Account/AddUser.cshtml", data);
         }
+
+        User newUser = new();
+        newUser.UserName = data.Username;
+        newUser.Email = data.Email;
+        newUser.PhoneNumber = data.PhoneNumber;
+        newUser.Password = data.Password;
+        newUser.Role = (data.Role == "admin") ? "admin" : (data.Role == "employee" ? "employee" : "customer");
+        newUser.Status = data.IsActive ? "active" : "pending";
+        newUser.LastActive = DateTime.Now;
+
+        _db.Add(newUser);
+        _db.SaveChanges();
+
+        if (newUser.Role == "employee" || newUser.Role == "admin")
+        {
+            Employee emp = new();
+            emp.UserId = newUser.Id;
+            emp.FirstName = !string.IsNullOrWhiteSpace(data.FirstName) ? data.FirstName : data.Username;
+            emp.LastName = !string.IsNullOrWhiteSpace(data.LastName) ? data.LastName : "";
+            emp.Department = !string.IsNullOrWhiteSpace(data.Department) ? data.Department : "Dev";
+            emp.Position = !string.IsNullOrWhiteSpace(data.Position) ? data.Position : "Staff";
+            emp.Salary = data.Salary ?? 25000m;
+            emp.HireDate = DateOnly.FromDateTime(DateTime.Today);
+
+            _db.Add(emp);
+            _db.SaveChanges();
+        }
+
+        TempData["UserMsg"] = "เพิ่มบัญชี '" + newUser.UserName + "' เรียบร้อยแล้ว";
+        return RedirectToAction("UserList");
     }
 
     [HttpGet]
     public IActionResult EditUser(int id)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "users";
 
-        User? user = null;
-        try
-        {
-            user = _db.Users.Include(u => u.Employee).FirstOrDefault(u => u.Id == id);
-        }
-        catch { }
-
-        if (user == null)
-        {
-            return RedirectToAction("UserList");
-        }
+        var user = (from u in _db.Users.Include(x => x.Employee) where u.Id == id select u).FirstOrDefault();
+        if (user == null) return RedirectToAction("UserList");
 
         var model = new EditUserViewModel
         {
@@ -396,6 +460,8 @@ public class DevController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult EditUser(EditUserViewModel data)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "users";
 
@@ -405,88 +471,110 @@ public class DevController : Controller
             return View("~/Views/Account/EditUser.cshtml", data);
         }
 
-        try
+        var user = (from u in _db.Users.Include(x => x.Employee) where u.Id == data.Id select u).FirstOrDefault();
+        if (user != null)
         {
-            var user = _db.Users.Include(u => u.Employee).FirstOrDefault(u => u.Id == data.Id);
-            if (user != null)
+            var checkDuplicate = (from u in _db.Users
+                                  where (u.Email == data.Email || u.UserName == data.Username) && u.Id != data.Id
+                                  select u).FirstOrDefault();
+
+            if (checkDuplicate != null)
             {
-                var checkDuplicate = _db.Users.FirstOrDefault(u =>
-                    (u.Email == data.Email || u.UserName == data.Username) && u.Id != data.Id);
-
-                if (checkDuplicate != null)
-                {
-                    ViewBag.Status = "อีเมลหรือชื่อผู้ใช้นี้ซ้ำกับบัญชีอื่นในระบบ";
-                    return View("~/Views/Account/EditUser.cshtml", data);
-                }
-
-                user.UserName = data.Username!;
-                user.Email = data.Email!;
-                user.PhoneNumber = data.PhoneNumber;
-                user.Password = data.Password;
-                user.Role = (data.Role == "admin") ? "admin" : (data.Role == "employee" ? "employee" : "customer");
-                user.Status = data.IsActive ? "active" : "pending";
-
-                if (user.Role == "employee" || user.Role == "admin")
-                {
-                    if (user.Employee == null)
-                    {
-                        user.Employee = new Employee
-                        {
-                            UserId = user.Id,
-                            FirstName = !string.IsNullOrWhiteSpace(data.FirstName) ? data.FirstName : user.UserName,
-                            LastName = data.LastName ?? "",
-                            Department = data.Department ?? "Dev",
-                            Position = data.Position ?? "Staff",
-                            Salary = data.Salary ?? 25000m,
-                            HireDate = DateOnly.FromDateTime(DateTime.Today)
-                        };
-                        _db.Employees.Add(user.Employee);
-                    }
-                    else
-                    {
-                        user.Employee.FirstName = !string.IsNullOrWhiteSpace(data.FirstName) ? data.FirstName : user.UserName;
-                        user.Employee.LastName = data.LastName ?? "";
-                        user.Employee.Department = data.Department ?? "Dev";
-                        user.Employee.Position = data.Position ?? "Staff";
-                        user.Employee.Salary = data.Salary ?? 25000m;
-                    }
-                }
-
-                _db.Update(user);
-                _db.SaveChanges();
-                TempData["UserMsg"] = $"แก้ไขข้อมูลบัญชี '{user.UserName}' เรียบร้อยแล้ว";
-                return RedirectToAction("UserList");
+                ViewBag.Status = "อีเมลหรือชื่อผู้ใช้นี้ซ้ำกับบัญชีอื่นในระบบ";
+                return View("~/Views/Account/EditUser.cshtml", data);
             }
-        }
-        catch (Exception ex)
-        {
-            ViewBag.Status = $"เกิดข้อผิดพลาด: {ex.Message}";
+
+            user.UserName = data.Username!;
+            user.Email = data.Email!;
+            user.PhoneNumber = data.PhoneNumber;
+            user.Password = data.Password;
+            user.Role = (data.Role == "admin") ? "admin" : (data.Role == "employee" ? "employee" : "customer");
+            user.Status = data.IsActive ? "active" : "pending";
+
+            if (user.Role == "employee" || user.Role == "admin")
+            {
+                if (user.Employee == null)
+                {
+                    Employee emp = new();
+                    emp.UserId = user.Id;
+                    emp.FirstName = !string.IsNullOrWhiteSpace(data.FirstName) ? data.FirstName : user.UserName;
+                    emp.LastName = data.LastName ?? "";
+                    emp.Department = data.Department ?? "Dev";
+                    emp.Position = data.Position ?? "Staff";
+                    emp.Salary = data.Salary ?? 25000m;
+                    emp.HireDate = DateOnly.FromDateTime(DateTime.Today);
+                    _db.Add(emp);
+                }
+                else
+                {
+                    user.Employee.FirstName = !string.IsNullOrWhiteSpace(data.FirstName) ? data.FirstName : user.UserName;
+                    user.Employee.LastName = data.LastName ?? "";
+                    user.Employee.Department = data.Department ?? "Dev";
+                    user.Employee.Position = data.Position ?? "Staff";
+                    user.Employee.Salary = data.Salary ?? 25000m;
+                }
+            }
+
+            _db.Update(user);
+            _db.SaveChanges();
+            TempData["UserMsg"] = "แก้ไขข้อมูลบัญชี '" + user.UserName + "' เรียบร้อยแล้ว";
+            return RedirectToAction("UserList");
         }
 
         return View("~/Views/Account/EditUser.cshtml", data);
     }
 
+    // แก้บัค Foreign Key Error ตอนลบผู้ใช้: เคลียร์ข้อมูลลูกที่ผูกอยู่ก่อนลบ User
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult DeleteUser(int id)
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
+        int currentUserId = HttpContext.Session.GetInt32("UserId") ?? 0;
+        if (id == currentUserId)
+        {
+            TempData["UserMsg"] = "ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่ได้";
+            return RedirectToAction("UserList");
+        }
+
         try
         {
-            var user = _db.Users.FirstOrDefault(u => u.Id == id);
+            var user = (from u in _db.Users where u.Id == id select u).FirstOrDefault();
             if (user != null)
             {
-                _db.Users.Remove(user);
+                var trips = (from t in _db.UserTrips where t.UserId == id select t).ToList();
+                if (trips.Count > 0) _db.RemoveRange(trips);
+
+                var tickets = (from t in _db.SupportTickets where t.CustomerId == id select t).ToList();
+                if (tickets.Count > 0) _db.RemoveRange(tickets);
+
+                var payments = (from p in _db.Payments where p.UserId == id select p).ToList();
+                if (payments.Count > 0) _db.RemoveRange(payments);
+
+                var ads = (from a in _db.Advertisements where a.UserId == id select a).ToList();
+                if (ads.Count > 0) _db.RemoveRange(ads);
+
+                var emp = (from e in _db.Employees where e.UserId == id select e).FirstOrDefault();
+                if (emp != null) _db.Remove(emp);
+
+                _db.Remove(user);
                 _db.SaveChanges();
-                TempData["UserMsg"] = $"ลบบัญชี '{user.UserName}' ออกจากระบบแล้ว";
+                TempData["UserMsg"] = "ลบบัญชี '" + user.UserName + "' ออกจากระบบเรียบร้อยแล้ว";
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            TempData["UserMsg"] = "ไม่สามารถลบบัญชีได้: " + ex.Message;
+        }
 
         return RedirectToAction("UserList");
     }
 
     public IActionResult Settings()
     {
+        if (!CheckDevAccess()) return RedirectToAction("Login", "Account");
+
         ViewData["Department"] = "Dev";
         ViewData["ActiveMenu"] = "settings";
         return View();
